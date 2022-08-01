@@ -20,7 +20,7 @@ public class CategoryController {
     @Autowired
     private IFrontCategoryService frontCategoryService;
 
-    @GetMapping("/list")
+    @GetMapping("/all")
     @ApiOperation("查询所有三级分类树")
     public JsonResult<FrontCategoryTreeVO<FrontCategoryEntity>> getTreeVO(){
         FrontCategoryTreeVO<FrontCategoryEntity> treeVO=frontCategoryService.categoryTree();
