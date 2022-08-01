@@ -8,11 +8,15 @@ import cn.tedu.mall.product.service.front.IForFrontCategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @DubboService
 @Service
@@ -40,7 +44,42 @@ public class FrontCategoryServiceImpl implements IFrontCategoryService {
         // Redis中没有三级分类树信息,当前请求是第一个运行该方法的请求
         // dubbo调用查询数据库中所有分类信息对象
         List<CategoryStandardVO> categoryStandardVOs=dubboCategoryService.getCategoryList();
+        // 调用将数据库中查询出的所有分类信息转换成三级分类树的方法
+        FrontCategoryTreeVO<FrontCategoryEntity> treeVO= initTree(categoryStandardVOs);
 
+
+        return null;
+    }
+
+    private FrontCategoryTreeVO<FrontCategoryEntity> initTree(List<CategoryStandardVO> categoryStandardVOs) {
+        // 第一部分,确定所有分类对象的父分类
+        // 声明一个Map,使用父分类id做这个map的key,使用当前分类对象集合对这个map的value
+        // 将所有相同父分类的对象添加到正确的集合中
+        Map<Long,List<FrontCategoryEntity>> map=new HashMap<>();
+        log.info("当前分类对象总数为:{}",categoryStandardVOs.size());
+        // 遍历categoryStandardVOs,进行下一步操作
+        for(CategoryStandardVO categoryStandardVO:categoryStandardVOs){
+            // CategoryStandardVO没有children属性,不能保存子分类
+            // 所以我们要先将它转换为能保存子分类的FrontCategoryEntity
+            FrontCategoryEntity frontCategoryEntity=new FrontCategoryEntity();
+            // 利用赋值工具类BeanUtils将同名属性赋值到frontCategoryEntity
+            BeanUtils.copyProperties(categoryStandardVO,frontCategoryEntity);
+            // 因为后面要反复使用当前分类对象的父分类id所以最好给它取出来
+            Long parentId=frontCategoryEntity.getParentId();
+            // 根据当前分类对象的父分类id向Map添加元素,但是要先判断是否已经存在这个Key
+            if(map.containsKey(parentId)){
+                //如果有这个key,我们直接将当前分类对象添加到map的value的List中
+                map.get(parentId).add(frontCategoryEntity);
+            }else{
+                // 如果当前map没有这个key
+                // 我们要创建List对象,将分类对象保存在这个List中
+                List<FrontCategoryEntity> value=new ArrayList<>();
+                value.add(frontCategoryEntity);
+                // 使用当前parentId做key,上面实例化的list做value保存到map中
+                map.put(parentId,value);
+            }
+
+        }
         return null;
     }
 }
