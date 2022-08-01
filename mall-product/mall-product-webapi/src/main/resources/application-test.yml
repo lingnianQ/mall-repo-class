@@ -57,7 +57,7 @@ seata:
       default: ${my.server.addr}:8091
   client:
     undo:
-      log-serialization: jackson
+      log-serialization: kyro
 #后期删除
 custom:
   file-upload:
