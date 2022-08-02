@@ -3,7 +3,9 @@ package cn.tedu.mall.front.controller;
 import cn.tedu.mall.common.restful.JsonPage;
 import cn.tedu.mall.common.restful.JsonResult;
 import cn.tedu.mall.front.service.IFrontProductService;
+import cn.tedu.mall.pojo.product.vo.AttributeStandardVO;
 import cn.tedu.mall.pojo.product.vo.SpuListItemVO;
+import cn.tedu.mall.pojo.product.vo.SpuStandardVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/front/spu")
 @Api(tags = "前台商品spu模块")
@@ -22,7 +26,7 @@ public class FrontSpuController {
     @Autowired
     private IFrontProductService frontProductService;
 
-    // localhost:10004/front/list/3
+    // localhost:10004/front/spu/list/3
     @GetMapping("/list/{categoryId}")
     @ApiOperation("根据分类id分页查询spu列表")
     @ApiImplicitParams({
@@ -38,7 +42,28 @@ public class FrontSpuController {
         JsonPage<SpuListItemVO> jsonPage=
                 frontProductService.listSpuByCategoryId(categoryId,page,pageSize);
         return JsonResult.ok(jsonPage);
+    }
 
+    // 根据SpuId查询spu信息
+    // localhost:10004/front/spu/4
+    @GetMapping("/{id}")
+    @ApiOperation("根据SpuId查询spu信息")
+    @ApiImplicitParam(value = "spuId",name = "id",example = "1",
+            required = true,dataType = "long")
+    public JsonResult<SpuStandardVO> getFrontSpuById(@PathVariable Long id){
+        SpuStandardVO spuStandardVO=frontProductService.getFrontSpuById(id);
+        return JsonResult.ok(spuStandardVO);
+    }
+
+    // 根据SpuId查询所有参数选项
+    @GetMapping("/template/{id}")
+    @ApiOperation("根据SpuId查询所有参数选项")
+    @ApiImplicitParam(value = "spuId",name = "id",example = "1",
+            required = true,dataType = "long")
+    public JsonResult<List<AttributeStandardVO>> getAttributesBySpuId(
+                                                   @PathVariable Long id){
+        List<AttributeStandardVO> list=frontProductService.getSpuAttributesBySpuId(id);
+        return JsonResult.ok(list);
     }
 
 

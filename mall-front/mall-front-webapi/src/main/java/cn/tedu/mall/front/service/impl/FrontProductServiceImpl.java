@@ -60,6 +60,13 @@ public class FrontProductServiceImpl implements IFrontProductService {
     // 根据spuId查询当前商品所有的参数选项
     @Override
     public List<AttributeStandardVO> getSpuAttributesBySpuId(Long spuId) {
-        return null;
+        // 这个查询运行的sql语句是一个5表联查
+        // 在product模块中编写,需要额外注意
+        List<AttributeStandardVO> list=dubboAttributeService.getSpuAttributesBySpuId(spuId);
+        return list;
     }
 }
+
+
+
+
