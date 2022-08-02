@@ -16,7 +16,57 @@
         <result column="bar_code" property="barCode"/>
         <result column="data" property="data"/>
     </resultMap>
-
+    <sql id="SimpleQueryFields">
+        <if test="true">
+            id,
+            user_id,
+            sku_id,
+            title,
+            main_picture,
+            price,
+            quantity,
+            gmt_create,
+            gmt_modified
+        </if>
+    </sql>
+    <!--  判断当前用户的购物车中是否已经包含指定sku的商品   -->
+    <select id="selectExistsCart" resultType="cn.tedu.mall.pojo.order.model.OmsCart">
+        select
+            <include refid="SimpleQueryFields"/>
+        from
+            oms_cart
+        where
+            user_id=#{userId}
+        and
+            sku_id=#{skuId}
+    </select>
+    <!-- 新增购物车中sku的信息  -->
+    <insert id="saveCart" useGeneratedKeys="true" keyProperty="id">
+        insert into oms_cart(
+            user_id,
+            sku_id,
+            title,
+            main_picture,
+            price,
+            quantity
+        ) values(
+            #{userId},
+            #{skuId},
+            #{title},
+            #{mainPicture},
+            #{price},
+            #{quantity}
+        )
+    </insert>
+    <!--   根据购物车id修改数量   -->
+    <update id="updateQuantityById">
+        update
+            oms_cart
+        set
+            quantity=#{quantity}
+        where
+            id=#{id}
+    </update>
 
 
 </mapper>
