@@ -71,6 +71,14 @@ public class OmsCartController {
         return JsonResult.ok();
     }
 
+    // 清空当前登录用户的购物车
+    @PostMapping("/delete/all")
+    @ApiOperation("清空当前登录用户的购物车")
+    @PreAuthorize("hasRole('user')")
+    public JsonResult removeCartsByUserId(){
+        omsCartService.removeAllCarts();
+        return JsonResult.ok("购物车清空完成");
+    }
 
 
 
