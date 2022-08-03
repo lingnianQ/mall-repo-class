@@ -103,7 +103,6 @@ public class OmsCartServiceImpl implements IOmsCartService {
         // 实施持久层调用
         omsCartMapper.updateQuantityById(omsCart);
 
-
     }
 
     // 业务逻辑层获得用户信息的方法,因为多个方法需要获得用户信息,所以单独编写一个方法
