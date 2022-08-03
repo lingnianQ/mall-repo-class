@@ -69,7 +69,11 @@ public class OmsCartServiceImpl implements IOmsCartService {
 
     @Override
     public void removeCart(Long[] ids) {
-
+        // 接收mapper执行删除时的返回值,也是删除成功的行数
+        int rows=omsCartMapper.deleteCartsByIds(ids);
+        if(rows==0){
+            throw new CoolSharkServiceException(ResponseCode.NOT_FOUND,"您要删除的商品不存在");
+        }
     }
 
     @Override

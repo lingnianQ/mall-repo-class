@@ -85,7 +85,7 @@
             oms_cart
         where
             id in
-        <foreach collection="array" item="id" separator="," open="(" close=")">
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
             #{id}
         </foreach>
     </delete>

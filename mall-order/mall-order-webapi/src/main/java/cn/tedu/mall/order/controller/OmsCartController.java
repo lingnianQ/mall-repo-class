@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import springfox.documentation.spring.web.json.Json;
 
 @RestController
 @RequestMapping("/oms/cart")
@@ -58,6 +59,19 @@ public class OmsCartController {
         return JsonResult.ok(jsonPage);
 
     }
+
+    // 根据id的数组删除购物车中sku商品的方法
+    @PostMapping("/delete")
+    @ApiOperation("根据id的数组删除购物车中sku商品")
+    @ApiImplicitParam(value = "要删除的购物车id数组",name = "ids",
+                                required = true,dataType = "array")
+    @PreAuthorize("hasRole('ROLE_user')")
+    public JsonResult removeCartsByIds(Long[] ids){
+        omsCartService.removeCart(ids);
+        return JsonResult.ok();
+    }
+
+
 
 
 
