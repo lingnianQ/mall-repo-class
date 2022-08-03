@@ -78,6 +78,17 @@
             user_id=#{id}
     </select>
 
+    <!--   根据id数组删除购物车信息    -->
+    <!--   实际开发中,可能在 foreach的collection属性中使用ids也是可以的 -->
+    <delete id="deleteCartsByIds">
+        delete from
+            oms_cart
+        where
+            id in
+        <foreach collection="array" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
 
 
 </mapper>

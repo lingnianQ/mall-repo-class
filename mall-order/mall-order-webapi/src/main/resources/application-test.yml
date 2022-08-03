@@ -35,6 +35,7 @@ dubbo:
     use-as-metadata-center: false
   consumer:
     check: false
+    timeout: 50000
 #seata服务端
 seata:
   tx-service-group: csmall_group
