@@ -14,6 +14,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -90,8 +91,18 @@ public class OmsCartServiceImpl implements IOmsCartService {
 
     }
 
+    // 修改购物车商品的数量
     @Override
     public void updateQuantity(CartUpdateDTO cartUpdateDTO) {
+        // 当前方法参数是cartUpdateDTO
+        // 这个类型中包含id和quantity属性
+        // 要想调用修改数量的方法,需要的参数类型是OmsCart
+        // 所以需要一个转换过程
+        OmsCart omsCart=new OmsCart();
+        BeanUtils.copyProperties(cartUpdateDTO,omsCart);
+        // 实施持久层调用
+        omsCartMapper.updateQuantityById(omsCart);
+
 
     }
 
