@@ -1,16 +1,19 @@
 package cn.tedu.mall.order.controller;
 
+import cn.tedu.mall.common.restful.JsonPage;
 import cn.tedu.mall.common.restful.JsonResult;
 import cn.tedu.mall.order.service.IOmsCartService;
+import cn.tedu.mall.order.utils.WebConsts;
 import cn.tedu.mall.pojo.order.dto.CartAddDTO;
+import cn.tedu.mall.pojo.order.vo.CartStandardVO;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/oms/cart")
@@ -31,5 +34,32 @@ public class OmsCartController {
         omsCartService.addCart(cartAddDTO);
         return JsonResult.ok("新增购物车sku完成");
     }
+
+    // 分页查询用户购物车中商品信息
+    @GetMapping("/list")
+    @ApiOperation("分页查询用户购物车中商品信息")
+    @ApiImplicitParams({
+            @ApiImplicitParam(value = "页码",name = "page",dataType = "int"),
+            @ApiImplicitParam(value = "每页条数",name = "pageSize",dataType = "int")
+    })
+    // 当@PreAuthorize括号后判断参数为hasRole时
+    // 是针对于角色(ROLE)的判断方式,它的效果是会自动在给定的角色名称前加"ROLE_"
+    // 最终效果 @PreAuthorize("hasRole('user')") 等价于 @PreAuthorize("hasAuthority('ROLE_user')")
+    @PreAuthorize("hasRole('user')")
+    public JsonResult<JsonPage<CartStandardVO>> listCartByPage(
+            // 控制器参数中,实际上也可以判断某个属性是否为空,并给定默认值
+            @RequestParam(required = false,defaultValue = WebConsts.DEFAULT_PAGE)
+            Integer page,
+            @RequestParam(required = false,defaultValue = WebConsts.DEFAULT_PAGE_SIZE)
+            Integer pageSize){
+        // 正常调用业务逻辑层并返回
+        JsonPage<CartStandardVO>
+                jsonPage=omsCartService.listCarts(page,pageSize);
+        return JsonResult.ok(jsonPage);
+
+    }
+
+
+
 
 }
