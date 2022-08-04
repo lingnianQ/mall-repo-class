@@ -10,9 +10,12 @@ import cn.tedu.mall.order.service.IOmsCartService;
 import cn.tedu.mall.order.service.IOmsOrderService;
 import cn.tedu.mall.order.utils.IdGeneratorUtils;
 import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
+import cn.tedu.mall.pojo.order.dto.OrderItemAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderListTimeDTO;
 import cn.tedu.mall.pojo.order.dto.OrderStateUpdateDTO;
+import cn.tedu.mall.pojo.order.model.OmsCart;
 import cn.tedu.mall.pojo.order.model.OmsOrder;
+import cn.tedu.mall.pojo.order.model.OmsOrderItem;
 import cn.tedu.mall.pojo.order.vo.OrderAddVO;
 import cn.tedu.mall.pojo.order.vo.OrderDetailVO;
 import cn.tedu.mall.pojo.order.vo.OrderListVO;
@@ -30,6 +33,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @DubboService
@@ -59,9 +64,69 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         BeanUtils.copyProperties(orderAddDTO,order);
         // 因为需要收集和计算的业务代码较多,单独编写一个方法
         loadOrder(order);
+        // 上面是为订单OmsOrder赋值
+        // 下面开始为订单中的订单项赋值
+        // orderAddDTO中包含本订单中所有的商品,也是订单项
+        // 获取这些订单项,检查是否为空
+        List<OrderItemAddDTO> itemAddDTOs=orderAddDTO.getOrderItems();
+        if(itemAddDTOs==null || itemAddDTOs.isEmpty()){
+            // 如果订单项集合为空或没有元素,直接抛出异常,终止业务
+            throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,"订单中必须包含商品");
+        }
+        // 现在我们有List<OrderItemAddDTO>的集合,来保存订单项信息
+        // 但是持久性新增order_item的参数类型List<OmsOrderItem>
+        // 所以我们要遍历当前itemAddDTOs集合,将其中的对象转换为OmsOrderItem类型,并保存在新的集合中
+        List<OmsOrderItem> omsOrderItems=new ArrayList<>();
+        // 遍历itemAddDTOs
+        for(OrderItemAddDTO addDTO: itemAddDTOs){
+            // 首先还是创建OmsOrderItem对象,然后将同名属性赋值
+            OmsOrderItem orderItem=new OmsOrderItem();
+            BeanUtils.copyProperties(addDTO,orderItem);
+            // 和Order一样,OrderItem也要单独写一个方法判断赋值
+            loadOrderItem(orderItem);
+            // 上面的方法赋值完成,能够确定orderItem的id,下面将omsOrder的订单id赋值给这个对象
+            orderItem.setOrderId(order.getId());
+            // 最后将orderItem保存在集合中
+            omsOrderItems.add(orderItem);
+            // 到此为止,我们第一部分的赋值过程就完成了
+            // 第二部分,完成新增订单的业务逻辑层操作数据库的过程
+            // 1.减少sku库存
+            // 获得skuId
+            Long skuId=orderItem.getSkuId();
+            // 执行减少库存
+            int rows=dubboSkuService.reduceStockNum(skuId,orderItem.getQuantity());
+            // 判断执行的影响行数
+            if(rows==0){
+                log.warn("商品skuId:{},库存不足",skuId);
+                // 减少库存失败,大概率是库存不足导致的,所有要抛出异常,给出提示
+                // 此时Seata会回滚所有之前数据库操作
+                throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,"库存不足");
+            }
+            // 2.删除购物车信息
+            OmsCart omsCart=new OmsCart();
+            omsCart.setUserId(order.getUserId());
+            omsCart.setSkuId(skuId);
+            cartService.removeUserCarts(omsCart);
+            // 3.新增订单
+            // 4.新增订单项
+        }
+
+
 
         return null;
     }
+
+    private void loadOrderItem(OmsOrderItem orderItem) {
+        if(orderItem.getId()==null){
+            Long id=IdGeneratorUtils.getDistributeId("order_item");
+            orderItem.setId(id);
+        }
+        if(orderItem.getSkuId()==null){
+            throw new CoolSharkServiceException(
+                            ResponseCode.BAD_REQUEST,"订单商品中必须包含skuId");
+        }
+    }
+
     // 新增订单业务中,需要收集和计算的order对象信息的方法
     private void loadOrder(OmsOrder order) {
         // 针对order对象必须具备但是为null的值进行赋值

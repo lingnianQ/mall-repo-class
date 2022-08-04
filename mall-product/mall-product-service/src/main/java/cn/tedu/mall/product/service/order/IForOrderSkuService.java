@@ -3,6 +3,7 @@ package cn.tedu.mall.product.service.order;
 import cn.tedu.mall.pojo.product.vo.SkuStandardVO;
 
 public interface IForOrderSkuService {
+
     int reduceStockNum(Long skuId, Integer quantity);
     /**
      * 根据SKU id查询SKU详情
