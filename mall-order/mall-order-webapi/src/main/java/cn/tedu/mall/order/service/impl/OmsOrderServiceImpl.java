@@ -107,13 +107,22 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
             omsCart.setUserId(order.getUserId());
             omsCart.setSkuId(skuId);
             cartService.removeUserCarts(omsCart);
-            // 3.新增订单
-            // 4.新增订单项
         }
-
-
-
-        return null;
+        // 3.新增订单
+        // 使用OmsOrderMapper的方法完成订单的新增
+        orderMapper.insertOrder(order);
+        // 4.新增订单项
+        // 使用OmsOrderItemMapper的方法完成订单项的新增
+        orderItemMapper.insertOrderItems(omsOrderItems);
+        // 最后收集生成订单过程中的一些重要数据,返回给前端
+        // 程序设计使用OrderAddVO来完成
+        OrderAddVO addVO=new OrderAddVO();
+        addVO.setId(order.getId());  // 订单id
+        addVO.setSn(order.getSn());  // 订单号sn
+        addVO.setCreateTime(order.getGmtOrder());  // 订单生成时间
+        addVO.setPayAmount(order.getAmountOfActualPay());   // 实际支付金额
+        // 最后别忘了返回
+        return addVO;
     }
 
     private void loadOrderItem(OmsOrderItem orderItem) {
