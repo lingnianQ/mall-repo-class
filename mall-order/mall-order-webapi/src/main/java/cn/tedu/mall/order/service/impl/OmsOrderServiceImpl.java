@@ -35,6 +35,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -202,7 +203,9 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
     // 订单包含订单信息和订单项信息两个方面(xml的sql语句是关联查询)
     @Override
     public JsonPage<OrderListVO> listOrdersBetweenTimes(OrderListTimeDTO orderListTimeDTO) {
-
+        // 因为默认查询最近一个月的订单,所以参数对象中的startTime和endTime为空的话,就赋默认值
+        // 如果有值的话,还要检查起始和结束时间是否合理
+        validaTimeAndLoadTimes(orderListTimeDTO);
         // 获得用户Id
         Long userId=getUserId();
         // orderListTimeDTO肯定没有用户Id的,所以将用户id赋值到这个对象中
@@ -213,6 +216,32 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         List<OrderListVO> list=orderMapper.selectOrdersBetweenTimes(orderListTimeDTO);
         // 别忘了返回
         return JsonPage.restPage(new PageInfo<>(list));
+    }
+
+    private void validaTimeAndLoadTimes(OrderListTimeDTO orderListTimeDTO) {
+        // 取出起始时间和结束时间
+        LocalDateTime start=orderListTimeDTO.getStartTime();
+        LocalDateTime end=orderListTimeDTO.getEndTime();
+        // 只要起始或结束时间有一个为null,就设置查询最近一个月的订单
+        if(start==null || end==null){
+            // 起始时间赋值为现在时间减一个月
+            start=LocalDateTime.now().minusMonths(1);
+            // 默认结束时间是当前时间
+            end=LocalDateTime.now();
+            // 赋值到orderListTimeDTO
+            orderListTimeDTO.setStartTime(start);
+            orderListTimeDTO.setEndTime(end);
+        }else{
+            // 如果start和end都不是null 进入else代码块
+            // 我们要检查start时间是否在end时间之前
+            // 如果要支持国际时间的判断,需要添加时区的修正
+            if(end.toInstant(ZoneOffset.of("+8")).toEpochMilli()<
+                start.toInstant(ZoneOffset.of("+8")).toEpochMilli()){
+                // 如果结束时间小于起始时间,抛出异常,结束业务
+                throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,"结束时间小于起始时间");
+            }
+        }
+
     }
 
     @Override
