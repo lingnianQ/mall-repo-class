@@ -20,6 +20,8 @@ import cn.tedu.mall.pojo.order.vo.OrderAddVO;
 import cn.tedu.mall.pojo.order.vo.OrderDetailVO;
 import cn.tedu.mall.pojo.order.vo.OrderListVO;
 import cn.tedu.mall.product.service.order.IForOrderSkuService;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -196,9 +198,21 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
 
     }
 
+    // 分页查询当前登录用户在指定时间范围内(默认一个月内)所有订单
+    // 订单包含订单信息和订单项信息两个方面(xml的sql语句是关联查询)
     @Override
     public JsonPage<OrderListVO> listOrdersBetweenTimes(OrderListTimeDTO orderListTimeDTO) {
-        return null;
+
+        // 获得用户Id
+        Long userId=getUserId();
+        // orderListTimeDTO肯定没有用户Id的,所以将用户id赋值到这个对象中
+        orderListTimeDTO.setUserId(userId);
+        // 设置分页条件
+        PageHelper.startPage(orderListTimeDTO.getPage(),orderListTimeDTO.getPageSize());
+        // 执行查询
+        List<OrderListVO> list=orderMapper.selectOrdersBetweenTimes(orderListTimeDTO);
+        // 别忘了返回
+        return JsonPage.restPage(new PageInfo<>(list));
     }
 
     @Override

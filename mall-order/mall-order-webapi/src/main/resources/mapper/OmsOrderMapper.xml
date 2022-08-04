@@ -121,7 +121,7 @@
         </collection>
     </resultMap>
     <!--   根据用户指定时间范围查询订单信息   -->
-    <select id="selectOrdersBetweenTimes"  >
+    <select id="selectOrdersBetweenTimes" resultMap="OrderListMap"  >
         SELECT
             oo.id,
             oo.sn,
