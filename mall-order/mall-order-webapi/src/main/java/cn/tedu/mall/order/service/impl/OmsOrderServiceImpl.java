@@ -74,7 +74,7 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         // 判断 userId是否为空
         if(order.getUserId()==null){
             // 从SpringSecurity上下文中获得用户id
-            order.setId(getUserId());
+            order.setUserId(getUserId());
         }
         // 判断订单号sn并赋值
         if (order.getSn()==null){
