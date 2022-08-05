@@ -5,6 +5,7 @@ import cn.tedu.mall.common.restful.JsonResult;
 import cn.tedu.mall.order.service.IOmsOrderService;
 import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderListTimeDTO;
+import cn.tedu.mall.pojo.order.model.OmsOrder;
 import cn.tedu.mall.pojo.order.vo.OrderAddVO;
 import cn.tedu.mall.pojo.order.vo.OrderListVO;
 import io.swagger.annotations.Api;
@@ -31,6 +32,7 @@ public class OmsOrderController {
     public JsonResult<OrderAddVO> addOrder(@Validated OrderAddDTO orderAddDTO){
         OrderAddVO orderAddVO=orderService.addOrder(orderAddDTO);
         return JsonResult.ok(orderAddVO);
+
     }
 
     // 查询订单的方法
