@@ -35,6 +35,12 @@ public class TestSearch {
         it.forEach(e -> System.out.println(e));
     }
 
+    @Test
+    void getSpuByKeyword(){
+        Iterable<SpuForElastic> it=elasticRepository.querySearch("手机");
+        it.forEach(e-> System.out.println(e));
+    }
+
 
 
 
