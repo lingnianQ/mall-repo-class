@@ -48,6 +48,7 @@ public class SearchServiceImpl implements ISearchService {
                 BeanUtils.copyProperties(spu,esSpu);
                 // 将被赋好值的esSpu对象添加到esSpus集合中
                 esSpus.add(esSpu);
+
             }
             // 执行SpringDataElasticsearch提供的批量新增的方法,执行新增到ES的操作
             spuRepository.saveAll(esSpus);
@@ -68,7 +69,7 @@ public class SearchServiceImpl implements ISearchService {
         // 最简单的办法就是就地实例化其对象,并为它赋值
         JsonPage<SpuForElastic> jsonPage=new JsonPage<>();
         // 当前页码
-        jsonPage.setPage(page+1);
+        jsonPage.setPage(page);
         // 每页条数
         jsonPage.setPageSize(pageSize);
         // 总条数和总页数
