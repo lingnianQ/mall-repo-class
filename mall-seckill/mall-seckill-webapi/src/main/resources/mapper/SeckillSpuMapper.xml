@@ -42,5 +42,10 @@
             end_time &gt; #{time}
     </select>
 
+    <!--   查询所有秒杀商品spu的id数组  -->
+    <select id="findAllSeckillSpuIds" resultType="long" >
+        select spu_id from seckill_spu
+    </select>
+
 
 </mapper>

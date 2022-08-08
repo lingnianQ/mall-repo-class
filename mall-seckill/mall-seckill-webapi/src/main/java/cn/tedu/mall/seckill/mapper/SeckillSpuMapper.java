@@ -15,6 +15,11 @@ public interface SeckillSpuMapper {
     // 根据给定的时间,查询秒杀商品信息
     List<SeckillSpu> findSeckillSpusByTime(LocalDateTime time);
 
+    // 查询所有秒杀商品spu的id数组
+    Long[] findAllSeckillSpuIds();
+
+
+
 
 
 }
