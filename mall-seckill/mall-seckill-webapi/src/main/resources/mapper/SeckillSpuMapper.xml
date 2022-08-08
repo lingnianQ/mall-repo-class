@@ -12,7 +12,24 @@
         <result column="gmt_modified" property="gmtModified" />
     </resultMap>
     <!--  查询秒杀spu的sql片段  -->
-
+    <sql id="SimpleField">
+        <if test="true">
+            id,
+            spu_id,
+            list_price,
+            start_time,
+            end_time,
+            gmt_create,
+            gmt_modified
+        </if>
+    </sql>
+    <!--  查询秒杀商品spu列表的方法   -->
+    <select id="findSeckillSpus" resultType="cn.tedu.mall.pojo.seckill.model.SeckillSpu">
+        select
+            <include refid="SimpleField" />
+        from
+            seckill_spu
+    </select>
 
 
 </mapper>
