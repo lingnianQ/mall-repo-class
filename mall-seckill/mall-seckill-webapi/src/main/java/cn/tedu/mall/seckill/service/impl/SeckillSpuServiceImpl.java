@@ -1,6 +1,8 @@
 package cn.tedu.mall.seckill.service.impl;
 
+import cn.tedu.mall.common.exception.CoolSharkServiceException;
 import cn.tedu.mall.common.restful.JsonPage;
+import cn.tedu.mall.common.restful.ResponseCode;
 import cn.tedu.mall.pojo.product.vo.SpuDetailStandardVO;
 import cn.tedu.mall.pojo.product.vo.SpuStandardVO;
 import cn.tedu.mall.pojo.seckill.model.SeckillSpu;
@@ -67,11 +69,30 @@ public class SeckillSpuServiceImpl implements ISeckillSpuService {
     }
 
 
-
-
-
+    // 根据SpuId查询Spu详情
     @Override
     public SeckillSpuVO getSeckillSpu(Long spuId) {
+        // 这里先判断当前spuId是否在布隆过滤器中
+        // 如果不在直接抛出异常
+
+        // 声明返回值类型对象
+        SeckillSpuVO seckillSpuVO=null;
+        // 获得SpuVO对应的key常量
+        // mall:seckill:spu:vo:1
+        String seckillSpuKey=SeckillCacheUtils.getSeckillSpuVOKey(spuId);
+        // 执行判断这个key是否在Redis中
+        if(redisTemplate.hasKey(seckillSpuKey)){
+            // 如果Redis中已经存在,直接从redis中获得
+            seckillSpuVO=(SeckillSpuVO) redisTemplate.boundValueOps(seckillSpuKey).get();
+        }else{
+            // 如果Redis中不存在数据
+            // 就要从两方面查询获得返回值需要的各种属性:1.pms_spu表  2.seckill_spu
+            SeckillSpu seckillSpu=seckillSpuMapper.findSeckillSpuById(spuId);
+            // 判断spuId查询不到信息的情况(布隆过滤器误判时会进这个if)
+            if (seckillSpu==null){
+                throw new CoolSharkServiceException(ResponseCode.NOT_FOUND,"您访问的商品不存在");
+            }
+        }
 
         return null;
     }

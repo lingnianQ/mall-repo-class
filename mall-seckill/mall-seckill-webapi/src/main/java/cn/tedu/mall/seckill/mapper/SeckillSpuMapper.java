@@ -19,6 +19,8 @@ public interface SeckillSpuMapper {
     Long[] findAllSeckillSpuIds();
 
 
+    // 根据SpuId查询seckillSpu信息
+    SeckillSpu findSeckillSpuById(Long spuId);
 
 
 
