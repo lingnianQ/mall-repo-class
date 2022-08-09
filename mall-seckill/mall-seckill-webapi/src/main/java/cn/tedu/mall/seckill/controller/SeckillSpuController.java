@@ -49,6 +49,16 @@ public class SeckillSpuController {
 
     }
 
+    @GetMapping("/{spuId}")
+    @ApiOperation("根据spuId查询秒杀spu详情")
+    @ApiImplicitParam(value = "spuId",name = "spuId",required = true,
+                                    dataType = "long",example = "2")
+    public JsonResult<SeckillSpuVO> getSeckillSpuVO(
+            @PathVariable Long spuId){
+        SeckillSpuVO seckillSpuVO=seckillSpuService.getSeckillSpu(spuId);
+        return JsonResult.ok(seckillSpuVO);
+    }
+
 
 
 

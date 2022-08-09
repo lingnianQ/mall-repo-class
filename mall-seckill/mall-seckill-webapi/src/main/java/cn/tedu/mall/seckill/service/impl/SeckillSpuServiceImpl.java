@@ -22,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -92,9 +94,44 @@ public class SeckillSpuServiceImpl implements ISeckillSpuService {
             if (seckillSpu==null){
                 throw new CoolSharkServiceException(ResponseCode.NOT_FOUND,"您访问的商品不存在");
             }
+            // 上面查询的是秒杀信息,下面查询pms_spu表中的信息
+            // pms_spu表一定是product模块的dubbo调用
+            SpuStandardVO spuStandardVO=dubboSeckillSpuService.getSpuById(spuId);
+            // 将spuStandardVO对象的同名属性赋值给seckillSpuVO
+            seckillSpuVO=new SeckillSpuVO();
+            BeanUtils.copyProperties(spuStandardVO,seckillSpuVO);
+            // 下面将秒杀信息赋值
+            seckillSpuVO.setSeckillListPrice(seckillSpu.getListPrice());
+            seckillSpuVO.setStartTime(seckillSpu.getStartTime());
+            seckillSpuVO.setEndTime(seckillSpu.getEndTime());
+            // 将赋好值的spuVO对象保存在Redis中
+            redisTemplate.boundValueOps(seckillSpuKey).set(seckillSpuVO,
+                    125*60*1000+RandomUtils.nextInt(100*1000),TimeUnit.MILLISECONDS);
         }
-
-        return null;
+        // 判断当前时间是否在秒杀时间段内
+        // 为了提高效率不再连接数据库
+        LocalDateTime nowTime=LocalDateTime.now();
+        // 看当前时间是否大于开始时间 并且 小于结束时间
+        // 时间对象计算时间差Duration
+        // 当时间差为负值时会返回negative
+        // 判断当前时间大于开始时间
+        Duration afterTime=Duration.between(nowTime,seckillSpuVO.getStartTime());
+        // 判断结束时间大于当前时间
+        Duration beforeTime=Duration.between(seckillSpuVO.getEndTime(),nowTime);
+        // 如果两个对象afterTime和beforeTime都是negative
+        // 证明当前时间大于开始时间小于结束时间
+        // 可以访问,需要将随机码返回给前端
+        if(afterTime.isNegative()  && beforeTime.isNegative()){
+            // 从Redis中获得随机码,并赋值到spuVO对象的url属性中
+            //  mall:seckill:spu:url:rand:code:1
+            String randomCodeKey=SeckillCacheUtils.getRandCodeKey(spuId);
+            seckillSpuVO.setUrl("/seckill/"+
+                            redisTemplate.boundValueOps(randomCodeKey).get());
+        }
+        // 别忘了返回
+        // 返回的spuVO对象中包含了Url以及随机码,这个随机码会返回给前端保存
+        // 前端只有利用这个Url发起的购买请求,才会给控制器接收处理
+        return seckillSpuVO;
     }
 
     // 常量类中,没有定义Detail对应的Key值,所以我们自己定义一个
