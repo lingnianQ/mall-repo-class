@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/skill")
+@RequestMapping("/seckill")
 @Api(tags = "提交秒杀订单")
 public class SeckillController {
 
@@ -73,10 +73,5 @@ public class SeckillController {
             throw new CoolSharkServiceException(ResponseCode.NOT_FOUND,
                     "没有指定商品");
         }
-
-
-
     }
-
-
 }

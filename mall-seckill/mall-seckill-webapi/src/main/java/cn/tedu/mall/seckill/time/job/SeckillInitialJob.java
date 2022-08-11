@@ -91,6 +91,10 @@ public class SeckillInitialJob implements Job {
                 redisTemplate.boundValueOps(randomCodeKey)
                         .set(randomCode,125*60+RandomUtils.nextInt(100),TimeUnit.SECONDS);
                 log.info("spuId为{}的商品随机码为{}",spu.getSpuId(),randomCode);
+            }else{
+                // 为了方便测试,我们在当前位置将随机码输出到控制台
+                String code=redisTemplate.boundValueOps(randomCodeKey).get()+"";
+                log.info("spuId为{}的商品随机码为{}",spu.getSpuId(),code);
             }
         }
 

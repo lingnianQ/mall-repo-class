@@ -67,7 +67,7 @@ public class SeckillServiceImpl implements ISeckillService {
         // 3.最后会讲当前key的值返回给调用者
         Long seckillTimes=stringRedisTemplate.boundValueOps(reSeckillKey).increment();
         // 如果seckillTimes值大于1,表示之前已经购买过
-        if(seckillTimes>1){
+        if(seckillTimes>100){
             // 购买次数超过1,证明不是第一次购买,终止业务,抛出异常
             throw new CoolSharkServiceException(
                                 ResponseCode.FORBIDDEN,"您已经购买过该商品");
