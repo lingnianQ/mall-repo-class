@@ -6,8 +6,11 @@ import cn.tedu.mall.common.restful.ResponseCode;
 import cn.tedu.mall.order.service.IOmsOrderService;
 import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderItemAddDTO;
+import cn.tedu.mall.pojo.order.vo.OrderAddVO;
 import cn.tedu.mall.pojo.seckill.dto.SeckillOrderAddDTO;
+import cn.tedu.mall.pojo.seckill.model.Success;
 import cn.tedu.mall.pojo.seckill.vo.SeckillCommitVO;
+import cn.tedu.mall.seckill.config.RabbitMqComponentConfiguration;
 import cn.tedu.mall.seckill.service.ISeckillService;
 import cn.tedu.mall.seckill.utils.SeckillCacheUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +18,7 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -91,8 +95,33 @@ public class SeckillServiceImpl implements ISeckillService {
         // 而且还有将SeckillOrderAddDTO中订单项的属性赋值给orderAddDTO的订单项集合中
         // 所以我们为这个转换单独编写个方法,减少当前方法的代码量
         OrderAddDTO orderAddDTO=convertSeckillOrderToOrder(seckillOrderAddDTO);
-
-        return null;
+        // 为userId赋值
+        orderAddDTO.setUserId(userId);
+        // 信息完整了,直接使用Dubbo调用生成一般订单的方法
+        OrderAddVO orderAddVO=dubboOrderService.addOrder(orderAddDTO);
+        // 进入第三阶段,使用消息队列记录秒杀成功信息
+        // 我们秒杀业务需要记录秒杀的成功信息,
+        // 但是这个信息的记录不急切运行,可以等秒杀服务器压力减少之后再去运行
+        // 是削峰填谷的典型,而且能容忍延迟进入数据库
+        // 这里使用RabbitMQ消息队列完成效果
+        // 先实例化Success对象,将其中的属性赋值
+        Success success=new Success();
+        BeanUtils.copyProperties(
+                seckillOrderAddDTO.getSeckillOrderItemAddDTO(),success);
+        //  将缺少的属性补全
+        success.setUserId(userId);
+        success.setOrderSn(orderAddVO.getSn());
+        // 不直接连接数据库执行新增,而是将消息发送给RabbitMQ
+        rabbitTemplate.convertAndSend(
+                RabbitMqComponentConfiguration.SECKILL_EX,
+                RabbitMqComponentConfiguration.SECKILL_RK,
+                success);
+        // 发送到消息队列后,会有消息的接收类来负责将success信息新增到数据库
+        // 当前方法返回值接口要求是SeckillCommitVO,其中属性和OrderAddVO完全一致
+        SeckillCommitVO seckillCommitVO=new SeckillCommitVO();
+        BeanUtils.copyProperties(orderAddVO,seckillCommitVO);
+        // 别忘了返回
+        return seckillCommitVO;
     }
     private OrderAddDTO convertSeckillOrderToOrder(SeckillOrderAddDTO seckillOrderAddDTO) {
         // 实例化OrderAddDTO
