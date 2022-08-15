@@ -4,8 +4,11 @@ import cn.tedu.mall.pojo.search.entity.SpuEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.annotations.Query;
+import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
+import org.springframework.stereotype.Repository;
 
-public interface SpuEntityRepository {
+@Repository
+public interface SpuEntityRepository extends ElasticsearchRepository<SpuEntity,Long> {
 
     // 根据用户输入的关键字查询Es中匹配的数据
     // 因为我们要查询的search_text字段,并没有在SpuEntity中声明

@@ -19,9 +19,12 @@ import springfox.documentation.spring.web.json.Json;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
+// 必须注释 @Service
+//@Service
 @Slf4j
-public class SearchServiceImpl implements ISearchService {
+@Deprecated
+public class SearchServiceImpl //implements ISearchService
+                    {
 
     // dubbo调用product模块
     @DubboReference
@@ -31,8 +34,9 @@ public class SearchServiceImpl implements ISearchService {
 
     // 先利用dubbo从数据库中查Spu,再将查出的spu新增到ES中
     // 而且整体是循环执行
-    @Override
+    //@Override
     public void loadSpuByPage() {
+        SearchServiceImpl a;
         // 先查询一次,这样就可以根据查询出的分页信息知道总页数了
         // 典型的先运行,后判断,推荐使用do-while
         int i=1;     // 循环次数,0也是页码
@@ -60,7 +64,7 @@ public class SearchServiceImpl implements ISearchService {
 
     }
 
-    @Override
+    //@Override
     public JsonPage<SpuForElastic> search(String keyword, Integer page, Integer pageSize) {
         // SpringData分页参数page如果是0表示第一页,所以参数赋值时要减1
         Page<SpuForElastic> spus=spuRepository.querySearch(keyword,
