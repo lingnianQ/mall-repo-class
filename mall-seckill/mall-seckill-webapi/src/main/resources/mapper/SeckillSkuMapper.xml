@@ -13,7 +13,38 @@
         <result column="gmt_modified" property="gmtModified" />
         <result column="seckill_limit" property="seckillLimit" />
     </resultMap>
+    <sql id="SimpleField">
+        <if test="true">
+            id,
+            sku_id,
+            spu_id,
+            seckill_stock,
+            seckill_price,
+            gmt_create,
+            gmt_modified,
+            seckill_limit
+        </if>
+    </sql>
+    <!--  根据SpuId查询秒杀Sku列表  -->
+    <select id="findSeckillSkusBySpuId"
+                            resultType="cn.tedu.mall.pojo.seckill.model.SeckillSku">
+        select
+            <include refid="SimpleField" />
+        from
+            seckill_sku
+        where
+            spu_id=#{spuId}
+    </select>
 
+    <!--  根据skuId修改库存数(参数是要减少的库存数)  -->
+    <update id="updateReduceStockBySkuId">
+        update
+            seckill_sku
+        set
+            seckill_stock=seckill_stock - #{quantity}
+        where
+            sku_id=#{skuId}
+    </update>
 
 
 </mapper>

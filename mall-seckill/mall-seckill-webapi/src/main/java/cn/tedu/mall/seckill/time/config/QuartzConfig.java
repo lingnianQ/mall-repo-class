@@ -1,0 +1,61 @@
+package cn.tedu.mall.seckill.time.config;
+
+import cn.tedu.mall.seckill.time.job.SeckillBloomInitialJob;
+import cn.tedu.mall.seckill.time.job.SeckillInitialJob;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@Slf4j
+public class QuartzConfig {
+
+    // 定义JobDetail
+    @Bean
+    public JobDetail initJobDetail(){
+        log.info("预热任务绑定");
+        return JobBuilder.newJob(SeckillInitialJob.class)
+                .withIdentity("initialSeckill")
+                .storeDurably()
+                .build();
+    }
+    // 定义触发器Trigger
+    @Bean
+    public Trigger initSeckillTrigger(){
+        log.info("预热触发器运行");
+        // 学习过程中,我们定义的Cron设置每分钟运行一次
+        CronScheduleBuilder cron=
+                CronScheduleBuilder.cronSchedule("0 0/1 * * * ?");
+        return TriggerBuilder.newTrigger()
+                .forJob(initJobDetail())
+                .withIdentity("initialTrigger")
+                .withSchedule(cron)
+                .build();
+    }
+
+    //  布隆过滤器的注册
+    @Bean
+    public JobDetail seckillBloomJobDetail(){
+        log.info("加载布隆过滤器");
+        return JobBuilder.newJob(SeckillBloomInitialJob.class)
+                .withIdentity("SeckillBloom")
+                .storeDurably()
+                .build();
+    }
+    // 布隆过滤器的触发器
+    @Bean
+    public Trigger seckillBloomTrigger(){
+        log.info("布隆过滤器触发器运行");
+        // 实际开发要根据秒杀批次定义布隆过滤器运行时机
+        // 学习过程中为了方便看效果业务每分钟运行一次
+        CronScheduleBuilder cron=CronScheduleBuilder.cronSchedule("0 0/1 * * * ?");
+        return TriggerBuilder.newTrigger()
+                .forJob(seckillBloomJobDetail())
+                .withIdentity("SeckillBloomTrigger")
+                .withSchedule(cron)
+                .build();
+    }
+
+
+}

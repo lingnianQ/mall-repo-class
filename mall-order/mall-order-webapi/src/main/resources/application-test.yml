@@ -1,7 +1,6 @@
 my:
   server:
     addr: localhost
-
   level:
     cn.tedu.mall: trace
 spring:

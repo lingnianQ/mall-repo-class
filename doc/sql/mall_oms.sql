@@ -91,10 +91,6 @@ insert  into `oms_order_item`(`id`,`order_id`,`sku_id`,`title`,`bar_code`,`data`
 (5009,5010,1,'2021年新款，小米11 Ultra黑色512G，16G超大内存120Hz高刷67w快充','0','[{\"id\":1,\"name\":\"屏幕尺寸\",\"value\":\"6.1寸\"},{\"id\":3,\"name\":\"颜色\",\"value\":\"黑色\"},{\"id\":5,\"name\":\"运行内存\",\"value\":\"16GB\"}]','picture1',6999.99,10,NULL,NULL),
 (5010,5011,1,'2021年新款，小米11 Ultra黑色512G，16G超大内存120Hz高刷67w快充','0','[{\"id\":1,\"name\":\"屏幕尺寸\",\"value\":\"6.1寸\"},{\"id\":3,\"name\":\"颜色\",\"value\":\"黑色\"},{\"id\":5,\"name\":\"运行内存\",\"value\":\"16GB\"}]','picture1',6999.99,10,'2022-03-16 11:42:11','2022-03-16 11:42:11');
 
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 CREATE TABLE `undo_log` (
                             `id` bigint NOT NULL AUTO_INCREMENT,
                             `branch_id` bigint NOT NULL,
