@@ -105,6 +105,22 @@ public class FrontCategoryServiceImpl implements IFrontCategoryService {
         for(FrontCategoryEntity oneLevel:firstLevels){
             // 确定了一级分类对象,可以根据当前一级分类的id,获得它包含的二级分类
             Long secondLevelParentId=oneLevel.getId();
+            // 获得当前分类的所有子分类对象
+            List<FrontCategoryEntity> secondLevels=map.get(secondLevelParentId);
+            // 判断secondLevels是否为空
+            if(secondLevels==null || secondLevels.isEmpty()){
+                log.warn("当前分类没有二级分类内容:{}",secondLevelParentId);
+                // 如果当前一级分类没有二级分类对象,跳过本次循环,继续其它一级分类的遍历
+                continue;
+            }
+            // 遍历二级分类集合
+            for(FrontCategoryEntity twoLevel : secondLevels){
+                // 二级分类的对象的id是三级分类的父id
+                //                              ↓↓↓↓↓↓↓
+                Long thirdLevelParentId=twoLevel.getId();
+
+            }
+
         }
         return null;
     }
