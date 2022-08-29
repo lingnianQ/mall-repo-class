@@ -68,4 +68,5 @@ public class CategoryStandardVO implements Serializable {
     @ApiModelProperty(value = "自定义排序序号", position = 10)
     private Integer sort;
 
+
 }
