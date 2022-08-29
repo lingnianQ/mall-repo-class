@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @DubboService
 @Service
@@ -56,10 +57,13 @@ public class FrontCategoryServiceImpl implements IFrontCategoryService {
         // 自定义一个转换三级分类树的方法,减少当前业务代码的冗余度
         FrontCategoryTreeVO<FrontCategoryEntity> treeVO=
                 initTree(categoryStandardVOs);
-
-
-
-        return null;
+        // 上面方法完成了转换,已经获得了最后要返回的treeVO数据
+        // 但是为了下次访问更方便,我们项目设计将它保存在Redis中
+        redisTemplate.boundValueOps(CATEGORY_TREE_KEY)
+                        .set(treeVO,1, TimeUnit.MINUTES);
+        // 上面定的时间是针对学习使用的,正常开发分类数据一般都24小时以上
+        // 这里也得返回!!!treeVO
+        return treeVO;
     }
 
     private FrontCategoryTreeVO<FrontCategoryEntity> initTree(List<CategoryStandardVO> categoryStandardVOs) {
@@ -118,10 +122,29 @@ public class FrontCategoryServiceImpl implements IFrontCategoryService {
                 // 二级分类的对象的id是三级分类的父id
                 //                              ↓↓↓↓↓↓↓
                 Long thirdLevelParentId=twoLevel.getId();
-
+                // 根据这个二级父分类id获得所有该分类下的三级分类对象集合
+                List<FrontCategoryEntity> thirdLevels=map.get(thirdLevelParentId);
+                // 判断三级分类集合是否为空
+                if(thirdLevels==null || thirdLevels.isEmpty()){
+                    log.warn("当前分类没有三级分类内容:{}",thirdLevelParentId);
+                    continue;
+                }
+                // 将三级分类对象集合赋值到二级分类对象的children属性中
+                twoLevel.setChildrens(thirdLevels);
             }
-
+            // 将二级分类对象集合赋值到一级分类对象的children属性中
+            oneLevel.setChildrens(secondLevels);
         }
-        return null;
+        // 到此为止,所有对象的父子分类关系都已经构建完成
+        // 最后要按照方法要求的返回值来返回
+        FrontCategoryTreeVO<FrontCategoryEntity> treeVO=
+                new FrontCategoryTreeVO<>();
+        // 最后将包含所有分类对象的一级分类树集合赋值到该对象中
+        treeVO.setCategories(firstLevels);
+        // 千万别忘了返回!!! treeVO
+        return treeVO;
     }
 }
+
+
+
