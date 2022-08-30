@@ -30,6 +30,45 @@
             gmt_modified
         </if>
     </sql>
+    <!--  判断当前用户的购物车中是否已经包含指定商品的sku  -->
+    <select id="selectExistsCart" resultMap="BaseResultMap">
+        select
+            <include refid="SimpleQueryFields"/>
+        from
+            oms_cart
+        where
+            user_id=#{userId}
+        and
+            sku_id=#{skuId}
+    </select>
+
+    <!--   新增购物车中sku的信息  -->
+    <insert id="saveCart" useGeneratedKeys="true" keyProperty="id" >
+        insert into oms_cart(
+            user_id,
+            sku_id,
+            title,
+            main_picture,
+            price,
+            quantity
+        ) values(
+            #{userId},
+            #{skuId},
+            #{title},
+            #{mainPicture},
+            #{price},
+            #{quantity}
+        )
+    </insert>
+    <!--  修改购物车中sku的数量  -->
+    <update id="updateQuantityById">
+        update
+            oms_cart
+        set
+            quantity=#{quantity}
+        where
+            id=#{id}
+    </update>
 
 
 
