@@ -4,7 +4,10 @@ package cn.tedu.mall.front.service.impl;
 import cn.tedu.mall.common.restful.JsonPage;
 import cn.tedu.mall.front.service.IFrontProductService;
 import cn.tedu.mall.pojo.product.vo.*;
+import cn.tedu.mall.product.service.front.IForFrontAttributeService;
+import cn.tedu.mall.product.service.front.IForFrontSkuService;
 import cn.tedu.mall.product.service.front.IForFrontSpuService;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.stereotype.Service;
@@ -17,6 +20,13 @@ public class FrontProductServiceImpl implements IFrontProductService {
 
     @DubboReference
     private IForFrontSpuService dubboSpuService;
+    // 消费skuService的相关服务:根据spuId查询sku列表
+    @DubboReference
+    private IForFrontSkuService dubboSkuService;
+    // 消费指定商品查询所有参数选项的相关服务:根据spuId查询参数列表
+    @DubboReference
+    private IForFrontAttributeService dubboAttributeService;
+
 
     @Override
     public JsonPage<SpuListItemVO> listSpuByCategoryId(Long categoryId, Integer page, Integer pageSize) {
