@@ -37,23 +37,34 @@ public class FrontProductServiceImpl implements IFrontProductService {
         return list;
     }
 
+    // 根据spuId查询Spu对象信息
     @Override
     public SpuStandardVO getFrontSpuById(Long id) {
-        return null;
+        //SpuStandardVO是标准的查询spu的返回值
+        SpuStandardVO spuStandardVO=dubboSpuService.getSpuById(id);
+        return spuStandardVO;
     }
-
+    // 根据SpuId查询sku列表
     @Override
     public List<SkuStandardVO> getFrontSkusBySpuId(Long spuId) {
-        return null;
+        // SkuStandardVO是标准的查询sku的返回值
+        List<SkuStandardVO> list=dubboSkuService.getSkusBySpuId(spuId);
+        return list;
     }
 
+    // 根据spuId查询spuDetail对象
     @Override
     public SpuDetailStandardVO getSpuDetail(Long spuId) {
-        return null;
+        SpuDetailStandardVO spuDetailStandardVO=
+                            dubboSpuService.getSpuDetailById(spuId);
+        return spuDetailStandardVO;
     }
 
+    // 根据spuId查询当前商品所有参数列表
     @Override
     public List<AttributeStandardVO> getSpuAttributesBySpuId(Long spuId) {
-        return null;
+        List<AttributeStandardVO> list=dubboAttributeService
+                            .getSpuAttributesBySpuId(spuId);
+        return list;
     }
 }
