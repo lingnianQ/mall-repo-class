@@ -82,7 +82,12 @@ public class OmsCartServiceImpl implements IOmsCartService {
 
     @Override
     public void removeAllCarts() {
-
+        Long userId=getUserId();
+        int rows=omsCartMapper.deleteCartsByUserId(userId);
+        if(rows==0){
+            throw new CoolSharkServiceException(ResponseCode.NOT_FOUND,
+                                        "您的购物车已经是空的了!");
+        }
     }
 
     @Override
