@@ -3,7 +3,7 @@
 <mapper namespace="cn.tedu.mall.order.mapper.OmsOrderItemMapper">
 
     <!-- 新增订单项(order_item)的方法 -->
-    <insert id="insertOrderItems">
+    <insert id="insertOrderItems" >
         insert into oms_order_item(
             id,
             order_id,
