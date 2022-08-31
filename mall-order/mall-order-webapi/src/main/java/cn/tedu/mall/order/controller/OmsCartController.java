@@ -60,6 +60,21 @@ public class OmsCartController {
         return JsonResult.ok(jsonPage);
     }
 
+    @PostMapping("/delete")
+    @ApiOperation("根据id数组删除购物车中的sku信息")
+    @ApiImplicitParam(value = "要删除的id数组",name="ids",
+                        required = true,dataType = "array")
+    // 当@PreAuthorize注解后括号中判断参数为hasRole时
+    // 相当于在做针对角色(role)的判断,这个写法的效果是对判断内容前(左侧)自动添加"ROLE_"
+    // 既@PreAuthorize("hasRole('user')") 写法的最终效果就等价于
+    // @PreAuthorize("hasAuthority('ROLE_user')")
+    @PreAuthorize("hasRole('user')")
+    public JsonResult removeCartsByIds(Long[] ids){
+        omsCartService.removeCart(ids);
+        return JsonResult.ok("运行了删除功能!");
+    }
+
+
 
 
 }
