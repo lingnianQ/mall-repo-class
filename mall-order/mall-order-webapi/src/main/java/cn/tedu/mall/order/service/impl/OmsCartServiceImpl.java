@@ -72,7 +72,12 @@ public class OmsCartServiceImpl implements IOmsCartService {
 
     @Override
     public void removeCart(Long[] ids) {
-
+        // 调用mapper删除的方法,完成按ids数组删除购物车的功能
+        int rows=omsCartMapper.deleteCartsByIds(ids);
+        if(rows==0){
+            throw new CoolSharkServiceException(ResponseCode.NOT_FOUND,
+                    "您要删除的商品不存在");
+        }
     }
 
     @Override
