@@ -97,7 +97,15 @@ public class OmsCartServiceImpl implements IOmsCartService {
 
     @Override
     public void updateQuantity(CartUpdateDTO cartUpdateDTO) {
-
+        // 当前方法参数是CartUpdateDTO
+        // 这个类型中只有id和quantity两个属性
+        // 要想实现修改数量,需要将这个类型转换为OmsCart
+        // 实例化OmsCart
+        OmsCart omsCart=new OmsCart();
+        // 同名属性赋值
+        BeanUtils.copyProperties(cartUpdateDTO,omsCart);
+        // 调用mapper方法进行修改
+        omsCartMapper.updateQuantityById(omsCart);
     }
 
 
