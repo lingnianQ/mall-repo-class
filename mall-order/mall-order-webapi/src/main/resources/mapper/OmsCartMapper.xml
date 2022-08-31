@@ -88,6 +88,19 @@
             user_id=#{id}
     </select>
 
+    <!--  根据用户选中的id,删除购物车中的商品(支持删除多个商品) -->
+    <!--  collection属性array可以更换为ids -->
+    <delete id="deleteCartsByIds">
+        delete from
+            oms_cart
+        where
+            id in
+        <foreach collection="array" item="id" separator=","
+                        open="(" close =")">
+            #{id}
+        </foreach>
+    </delete>
+
 
 </mapper>
 
