@@ -90,9 +90,11 @@ public class OmsCartServiceImpl implements IOmsCartService {
         }
     }
 
+    // 生成订单时,从购物车中删除订单中选择的商品
     @Override
     public void removeUserCarts(OmsCart omsCart) {
-
+        // OmsCart是包含userId和skuId的,直接调用即可
+        omsCartMapper.deleteCartByUserIdAndSkuId(omsCart);
     }
 
     @Override
