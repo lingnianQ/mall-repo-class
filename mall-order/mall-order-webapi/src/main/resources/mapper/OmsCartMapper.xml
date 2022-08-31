@@ -69,6 +69,18 @@
         where
             id=#{id}
     </update>
+
+    <!--  根据用户id查询购物车中sku信息 -->
+    <select id="selectCartByUserId" resultMap="BaseResultMap">
+        select
+            <include refid="SimpleQueryFields" />
+        from
+            oms_cart
+        where
+            user_id=#{id}
+    </select>
+
+
 </mapper>
 
 
