@@ -18,6 +18,7 @@ public class ForOrderSkuServiceImpl implements IForOrderSkuService {
     @Override
     @GlobalTransactional
     public int reduceStockNum(Long skuId, Integer quantity) {
+
         return skuMapper.updateStockById(skuId,quantity);
     }
 

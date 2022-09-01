@@ -13,6 +13,7 @@ import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderItemAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderListTimeDTO;
 import cn.tedu.mall.pojo.order.dto.OrderStateUpdateDTO;
+import cn.tedu.mall.pojo.order.model.OmsCart;
 import cn.tedu.mall.pojo.order.model.OmsOrder;
 import cn.tedu.mall.pojo.order.model.OmsOrderItem;
 import cn.tedu.mall.pojo.order.vo.OrderAddVO;
@@ -23,6 +24,7 @@ import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.apache.lucene.search.CollectionTerminatedException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -90,12 +92,44 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
             orderItem.setOrderId(order.getId());
             // 将赋好值的orderItem对象添加到集合中
             omsOrderItems.add(orderItem);
-
+            // 第二部分:执行数据库操作
+            // 1.减少sku库存
+            // 获得skuId
+            Long skuId=orderItem.getSkuId();
+            // 执行减少库存的方法
+            int rows=dubboSkuService.reduceStockNum(
+                                            skuId,orderItem.getQuantity());
+            // 判断执行修改影响的行数
+            if(rows==0){
+                log.warn("商品skuId:{},库存不足",skuId);
+                // 库存不足导致运行失败,抛出异常
+                // Seata会在抛出异常时终止事务
+                throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,
+                                "库存不足!");
+            }
+            // 2.删除购物车信息
+            OmsCart omsCart=new OmsCart();
+            omsCart.setUserId(order.getUserId());
+            omsCart.setSkuId(skuId);
+            // 执行删除操作
+            omsCartService.removeUserCarts(omsCart);
         }
-
-        // 第二部分:执行数据库操作
+        // 3.新增订单
+        // OmsOrderMapper调用新增订单的方法即可
+        omsOrderMapper.insertOrder(order);
+        // 4.新增订单项
+        // 使用OmsOrderItemMapper调用新增订单项的方法
+        omsOrderItemMapper.insertOrderItems(omsOrderItems);
         // 第三部分:收集返回值信息最终返回
-        return null;
+        // 当前方法要求返回OrderAddVO类型
+        OrderAddVO addVO=new OrderAddVO();
+        // 给addVO各属性赋值
+        addVO.setId(order.getId());
+        addVO.setSn(order.getSn());
+        addVO.setCreateTime(order.getGmtCreate());
+        addVO.setPayAmount(order.getAmountOfActualPay());
+        // 最后别忘了返回!!!!
+        return addVO;
     }
 
     private void loadOrder(OmsOrder order) {
