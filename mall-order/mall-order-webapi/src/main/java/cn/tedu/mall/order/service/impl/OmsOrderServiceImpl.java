@@ -63,6 +63,7 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         // 给id赋值,我们使用Leaf分布式方式来赋值
         Long id= IdGeneratorUtils.getDistributeId("order");
         order.setId(id);
+
     }
 
     @Override
