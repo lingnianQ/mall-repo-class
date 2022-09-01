@@ -1,6 +1,9 @@
 package cn.tedu.mall.order.service.impl;
 
+import cn.tedu.mall.common.exception.CoolSharkServiceException;
+import cn.tedu.mall.common.pojo.domain.CsmallAuthenticationInfo;
 import cn.tedu.mall.common.restful.JsonPage;
+import cn.tedu.mall.common.restful.ResponseCode;
 import cn.tedu.mall.order.mapper.OmsOrderItemMapper;
 import cn.tedu.mall.order.mapper.OmsOrderMapper;
 import cn.tedu.mall.order.service.IOmsCartService;
@@ -20,7 +23,13 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 // 后期秒杀功能会调用这个生成订单的方法
 @DubboService
@@ -64,6 +73,34 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         Long id= IdGeneratorUtils.getDistributeId("order");
         order.setId(id);
 
+        // 赋值用户id
+        order.setUserId(getUserId());
+
+        // 赋值sn(订单号)
+        order.setSn(UUID.randomUUID().toString());
+        // 如果订单状态为null赋值为0
+        if(order.getState()==null)
+            order.setState(0);
+
+        // 为了保证下单时间\创建时间\最后修改时间一致
+        // 我们单独为他们赋值
+        LocalDateTime now=LocalDateTime.now();
+        order.setGmtOrder(now);
+        order.setGmtCreate(now);
+        order.setGmtModified(now);
+
+        // 后端计算实际支付金额
+        // 计算公式: 实际支付金额=原价+运费-优惠
+        // 数据类型BigDecimal,是支持精确计算的类型
+        BigDecimal price=order.getAmountOfOriginalPrice();
+        BigDecimal freight=order.getAmountOfFreight();
+        BigDecimal discount=order.getAmountOfDiscount();
+        BigDecimal actualPay=price.add(freight).subtract(discount);
+        // 将计算得到的实际支付金额,赋值到order
+        order.setAmountOfActualPay(actualPay);
+
+
+
     }
 
     @Override
@@ -79,5 +116,28 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
     @Override
     public OrderDetailVO getOrderDetail(Long id) {
         return null;
+    }
+
+    // 业务逻辑层中获得用户信息的方法
+    // 目标是从SpringSecurity上下文中获取由JWT解析而来的对象
+    public CsmallAuthenticationInfo getUserInfo(){
+        // 声明SpringSecurity上下文对象
+        UsernamePasswordAuthenticationToken authenticationToken=
+                (UsernamePasswordAuthenticationToken)
+                        SecurityContextHolder.getContext().getAuthentication();
+        // 为了保险起见,判断一下这个对象是否为空
+        if(authenticationToken==null){
+            throw new CoolSharkServiceException(ResponseCode.UNAUTHORIZED,"没有登录");
+        }
+        // 从上下文中获取登录用户的信息
+        // 这个信息是由JWT解析获得的
+        CsmallAuthenticationInfo csmallAuthenticationInfo=
+                (CsmallAuthenticationInfo) authenticationToken.getCredentials();
+        // 返回登录信息
+        return csmallAuthenticationInfo;
+    }
+    // 业务逻辑层大多数方法都是只需要用户的ID,所以专门编写一个方法返回id
+    public Long getUserId(){
+        return getUserInfo().getId();
     }
 }

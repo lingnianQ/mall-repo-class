@@ -129,6 +129,7 @@ public class OmsOrder implements Serializable {
      */
     private BigDecimal amountOfDiscount;
 
+
     /**
      * 实际支付
      */
