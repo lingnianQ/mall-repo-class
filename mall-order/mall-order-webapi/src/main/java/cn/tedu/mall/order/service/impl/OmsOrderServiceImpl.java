@@ -10,9 +10,11 @@ import cn.tedu.mall.order.service.IOmsCartService;
 import cn.tedu.mall.order.service.IOmsOrderService;
 import cn.tedu.mall.order.utils.IdGeneratorUtils;
 import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
+import cn.tedu.mall.pojo.order.dto.OrderItemAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderListTimeDTO;
 import cn.tedu.mall.pojo.order.dto.OrderStateUpdateDTO;
 import cn.tedu.mall.pojo.order.model.OmsOrder;
+import cn.tedu.mall.pojo.order.model.OmsOrderItem;
 import cn.tedu.mall.pojo.order.vo.OrderAddVO;
 import cn.tedu.mall.pojo.order.vo.OrderDetailVO;
 import cn.tedu.mall.pojo.order.vo.OrderListVO;
@@ -29,6 +31,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 // 后期秒杀功能会调用这个生成订单的方法
@@ -61,6 +65,33 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         // 可以对比OrderAddDTO和OmsOrder类的属性,发现若干属性需要我们来手动赋值
         // 以为赋值属性较多,建议单独编写一个方法处理
         loadOrder(order);
+        // 到此为止,order赋值完成
+        // 下面开始为orderAddDTO对象中的OrderItemAddDTO的集合转换和赋值
+        // 首先检查它是不是null
+        List<OrderItemAddDTO> itemAddDTOs=orderAddDTO.getOrderItems();
+        if(itemAddDTOs==null || itemAddDTOs.isEmpty()){
+            // 订单中的订单项如果为空,那么抛出异常,终止订单新增业务
+            throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,
+                    "订单中必须包含至少一件商品");
+        }
+        // 我们确认订单中有商品后,需要将现在itemAddDTOs集合中的对象转换为OmsOrderItem类型
+        // 还需要将不存在的属性赋上值,最后才能进行数据库新增操作
+        // 所以我们要实例化一个OmsOrderItem类型的集合,接收转换后的对象
+        List<OmsOrderItem> omsOrderItems=new ArrayList<>();
+        // 遍历itemAddDTOs
+        for(OrderItemAddDTO addDTO : itemAddDTOs){
+            // 还是先将当前遍历的addDTO对象的同名属性赋值给OmsOrderItem
+            OmsOrderItem orderItem=new OmsOrderItem();
+            BeanUtils.copyProperties(addDTO,orderItem);
+            // 赋值id
+            Long itemId=IdGeneratorUtils.getDistributeId("order_item");
+            orderItem.setId(itemId);
+            // 赋值orderid
+            orderItem.setOrderId(order.getId());
+            // 将赋好值的orderItem对象添加到集合中
+            omsOrderItems.add(orderItem);
+
+        }
 
         // 第二部分:执行数据库操作
         // 第三部分:收集返回值信息最终返回
