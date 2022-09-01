@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -164,8 +165,6 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         // 将计算得到的实际支付金额,赋值到order
         order.setAmountOfActualPay(actualPay);
 
-
-
     }
 
     @Override
@@ -173,9 +172,40 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
 
     }
 
+    // 分页查询当前登录用户在指定时间范围内(默认一个月内)所有订单
+    // 查询结果OrderListVO包含订单信息和该订单中的订单项(通过xml关联查询实现)
     @Override
     public JsonPage<OrderListVO> listOrdersBetweenTimes(OrderListTimeDTO orderListTimeDTO) {
+
+        // 默认查询一个月内的所有订单,所有要判断参数中startTime和endTime是否为空
+        // 还要判断startTime和endTime时间先后顺序是否合理
+        validaTimeAndLoadTimes(orderListTimeDTO);
+
         return null;
+    }
+    private void validaTimeAndLoadTimes(OrderListTimeDTO orderListTimeDTO) {
+        // 取出起始时间和结束时间
+        LocalDateTime start=orderListTimeDTO.getStartTime();
+        LocalDateTime end=orderListTimeDTO.getEndTime();
+        // 为了不再添加业务的复杂度,当start和end有一个为null 就查进一个月的
+        if(start==null || end==null){
+            // 开始时间设置为现在减一个月
+            start=LocalDateTime.now().minusMonths(1);
+            end=LocalDateTime.now();
+            // 赋值到参数中
+            orderListTimeDTO.setStartTime(start);
+            orderListTimeDTO.setEndTime(end);
+        }else{
+            // 如果start和end都非空
+            // 要判断start实际是否在end之前
+            // 如果要编写支持国际时区时间判断,要添加时区的修正
+            if(end.toInstant(ZoneOffset.of("+8")).toEpochMilli()<
+                start.toInstant(ZoneOffset.of("+8")).toEpochMilli()){
+                // 如果结束时间小于开始时间,抛出异常,终止业务
+                throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,
+                        "结束时间应大于起始时间!");
+            }
+        }
     }
 
     @Override
