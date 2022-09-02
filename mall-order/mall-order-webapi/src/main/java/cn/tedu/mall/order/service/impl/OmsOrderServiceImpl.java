@@ -29,6 +29,7 @@ import org.apache.dubbo.config.annotation.DubboService;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -169,9 +170,15 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
 
     }
 
+    // 根据订单id 修改订单状态的业务逻辑层方法
     @Override
     public void updateOrderState(OrderStateUpdateDTO orderStateUpdateDTO) {
-
+        // 参数OrderStateUpdateDTO包含订单id和要修改的状态码
+        // 将参数属性值赋值给OmsOrder类型对象,以便持久层调用
+        OmsOrder order=new OmsOrder();
+        BeanUtils.copyProperties(orderStateUpdateDTO,order);
+        // 调用持久层方法
+        omsOrderMapper.updateOrderById(order);
     }
 
     // 分页查询当前登录用户在指定时间范围内(默认一个月内)所有订单
