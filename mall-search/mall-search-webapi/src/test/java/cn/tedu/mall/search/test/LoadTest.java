@@ -31,8 +31,10 @@ public class LoadTest {
     // 根据title查询数据
     @Test
     void getSpuByTitle(){
+//        Iterable<SpuForElastic> it=
+//                repository.querySpuForElasticsByTitleMatches("手机华为小米");
         Iterable<SpuForElastic> it=
-                repository.querySpuForElasticsByTitleMatches("手机华为小米");
+                repository.querySearch("手机");
         it.forEach(e -> System.out.println(e));
     }
 
