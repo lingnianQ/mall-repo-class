@@ -30,5 +30,18 @@
         from
             seckill_spu
     </select>
+    <!--  根据指定时间,查询正在进行秒杀的商品信息  -->
+    <select id="findSeckillSpusByTime" resultMap="BaseResultMap">
+        select
+            <include refid="SimpleField" />
+        from
+            seckill_spu
+        where
+            start_time &lt; #{time}
+        and
+            end_time &gt; #{time}
+    </select>
+
+
 
 </mapper>
