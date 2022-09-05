@@ -8,6 +8,7 @@ import cn.tedu.mall.pojo.front.vo.FrontCategoryTreeVO;
 import cn.tedu.mall.pojo.product.vo.CategoryStandardVO;
 import cn.tedu.mall.product.service.front.IForFrontCategoryService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.math.RandomUtils;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.BeanUtils;
@@ -60,7 +61,7 @@ public class FrontCategoryServiceImpl implements IFrontCategoryService {
         // 上面方法完成了转换,已经获得了最后要返回的treeVO数据
         // 但是为了下次访问更方便,我们项目设计将它保存在Redis中
         redisTemplate.boundValueOps(CATEGORY_TREE_KEY)
-                        .set(treeVO,1, TimeUnit.MINUTES);
+                        .set(treeVO,10*60*1000+ RandomUtils.nextInt(30000), TimeUnit.MILLISECONDS);
         // 上面定的时间是针对学习使用的,正常开发分类数据一般都24小时以上
         // 这里也得返回!!!treeVO
         return treeVO;
