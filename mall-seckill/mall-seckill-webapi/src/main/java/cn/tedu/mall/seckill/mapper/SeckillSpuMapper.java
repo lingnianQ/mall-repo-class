@@ -15,6 +15,11 @@ public interface SeckillSpuMapper {
     // 根据指定时间,查询正在进行秒杀的商品信息
     List<SeckillSpu> findSeckillSpusByTime(LocalDateTime time);
 
+    // 根据spuId查询spu商品信息
+    SeckillSpu findSeckillSpuById(Long spuId);
+
+    // 布隆过滤器用,查询所有商品的spuId
+    Long[] findAllSeckillSpuIds();
 
 
 }
