@@ -9,6 +9,7 @@ import cn.tedu.mall.pojo.seckill.vo.SeckillSpuVO;
 import cn.tedu.mall.product.service.seckill.IForSeckillSpuService;
 import cn.tedu.mall.seckill.mapper.SeckillSpuMapper;
 import cn.tedu.mall.seckill.service.ISeckillSpuService;
+import cn.tedu.mall.seckill.utils.SeckillCacheUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -69,8 +70,26 @@ public class SeckillSpuServiceImpl implements ISeckillSpuService {
         return JsonPage.restPage(new PageInfo<>(seckillSpuVOs));
     }
 
+    // 根据SpuId查询Spu详情(包含秒杀信息和spu普通信息)
     @Override
     public SeckillSpuVO getSeckillSpu(Long spuId) {
+        // 先使用布隆过滤器对参数有spuId进行判断
+        // 如果判断结果是spuId不存在于数据库中,直接抛出异常
+
+        // 声明返回值类型的对象
+        SeckillSpuVO seckillSpuVO=null;
+        // 获得spuVo对应的常量key
+        // mall:seckill:spu:vo:2
+        String seckillSpuKey= SeckillCacheUtils.getSeckillSpuVOKey(spuId);
+        // 判断Redis中是否包含这个key
+        if(redisTemplate.hasKey(seckillSpuKey)){
+            // 如果Redis已经存在,直接从Redis中获取
+            seckillSpuVO=(SeckillSpuVO)redisTemplate
+                        .boundValueOps(seckillSpuKey).get();
+        }else{
+
+        }
+
         return null;
     }
 
