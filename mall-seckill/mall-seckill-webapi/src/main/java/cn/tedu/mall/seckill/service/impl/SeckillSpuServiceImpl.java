@@ -1,6 +1,8 @@
 package cn.tedu.mall.seckill.service.impl;
 
+import cn.tedu.mall.common.exception.CoolSharkServiceException;
 import cn.tedu.mall.common.restful.JsonPage;
+import cn.tedu.mall.common.restful.ResponseCode;
 import cn.tedu.mall.pojo.product.vo.SpuDetailStandardVO;
 import cn.tedu.mall.pojo.product.vo.SpuStandardVO;
 import cn.tedu.mall.pojo.seckill.model.SeckillSpu;
@@ -20,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -87,10 +91,62 @@ public class SeckillSpuServiceImpl implements ISeckillSpuService {
             seckillSpuVO=(SeckillSpuVO)redisTemplate
                         .boundValueOps(seckillSpuKey).get();
         }else{
-
+            // 如果Redis中不存在这个key
+            // 返回值seckillSpuVO包含spu秒杀信息和spu普通信息
+            // 先查询秒杀信息:
+            SeckillSpu seckillSpu= seckillSpuMapper.findSeckillSpuById(spuId);
+            // 判断seckillSpu是否为空(原因是布隆过滤器可能误判)
+            if(seckillSpu==null){
+                throw new CoolSharkServiceException(ResponseCode.NOT_FOUND,
+                        "您访问的商品不存在");
+            }
+            // 到此为止,秒杀信息已经成功获取,下面获取spu普通商品信息
+            // 所以需要Dubbo调用product模块的提供的查询mall_pms数据库的信息
+            SpuStandardVO spuStandardVO=dubboSeckillSpuService.getSpuById(spuId);
+            // 先实例化SeckillSpuVo对象,再进行赋值
+            seckillSpuVO=new SeckillSpuVO();
+            // spuStandardVO对象的同名属性赋值到seckillSpuVO对象中,赋值普通spu信息
+            BeanUtils.copyProperties(spuStandardVO,seckillSpuVO);
+            // 下面将秒杀spu信息赋值
+            seckillSpuVO.setSeckillListPrice(seckillSpu.getListPrice());
+            seckillSpuVO.setStartTime(seckillSpu.getStartTime());
+            seckillSpuVO.setEndTime(seckillSpu.getEndTime());
+            // 将seckillSpuVO对象保存到Redis中
+            redisTemplate.boundValueOps(seckillSpuKey).set(seckillSpuVO,
+                120*60*1000+RandomUtils.nextInt(10000),TimeUnit.MILLISECONDS);
         }
-
-        return null;
+        // 返回前最后的步骤是给seckillSpuVO对象的url属性赋值
+        // 一旦赋值url属性,就意味着当前用户具备了提高订单的路径信息
+        // 所以必须经过秒杀时间判断,才能给url赋值
+        // 判断当前时间是否在秒杀时间段内
+        LocalDateTime nowTime=LocalDateTime.now();
+        // 当前是高并发状态,不能再轻易连接数据库,所以使用不连库的方式判断
+        // 判断的基本原则是当前时间大于开始时间并且小于结束时间
+        // 我们可以利用"时间差"对象Duration来判断时间
+        // Duration对象有一个计算时间差的方法between
+        // 这个方法中传入两个参数,来计算时间差
+        // between方法是第二个参数减第一个参数计算时间差
+        // 特征是如果时间差为负值返回negative
+        // 判断当前时间大于开始时间
+        Duration afterTime=Duration.between(nowTime,seckillSpuVO.getStartTime());
+        // 判断结束时间大于当前时间
+        Duration beforeTime=Duration.between(seckillSpuVO.getEndTime(),nowTime);
+        // 如果上面afterTime和beforeTime同时是negative
+        // 表示nowTime在这两个时间之间
+        // 在满足条件的前提下,我们向seckillSpuVO的url属性赋值
+        if(afterTime.isNegative() && beforeTime.isNegative()) {
+            // 所有随机码都会在预热时保存redis中,我们先只需要确定key就可以获取
+            // mall:seckill:spu:url:rand:code:2
+            String randCodeKey=SeckillCacheUtils.getRandCodeKey(spuId);
+            String randCode=redisTemplate.boundValueOps(randCodeKey).get()+"";
+            // 向url属性赋值
+            seckillSpuVO.setUrl("/seckill/"+randCode);
+            System.out.println("--------url赋值随机码为:"+randCode+"---------");
+        }
+        // 最后别忘了返回
+        // 正常情况下返回的seckillSpuVO 是包含url的,这个url会响应给前端来保存
+        // 在前端进行提交订单时,需要利用这个url才能正常发起购买
+        return seckillSpuVO;
     }
 
 
