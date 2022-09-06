@@ -1,6 +1,7 @@
 package cn.tedu.mall.seckill.service.impl;
 
 import cn.tedu.mall.common.restful.JsonPage;
+import cn.tedu.mall.pojo.product.vo.SpuDetailStandardVO;
 import cn.tedu.mall.pojo.product.vo.SpuStandardVO;
 import cn.tedu.mall.pojo.seckill.model.SeckillSpu;
 import cn.tedu.mall.pojo.seckill.vo.SeckillSpuDetailSimpleVO;
@@ -11,6 +12,7 @@ import cn.tedu.mall.seckill.service.ISeckillSpuService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.math.RandomUtils;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -92,9 +95,19 @@ public class SeckillSpuServiceImpl implements ISeckillSpuService {
             simpleVO=(SeckillSpuDetailSimpleVO)redisTemplate
                     .boundValueOps(seckillDetailKey).get();
         }else {
-
+            // 如果Redis中没有这个key,就需要查询这个spuId的detail数据
+            // 借助product模块提供的服务,利用dubbo实现查询
+            SpuDetailStandardVO spuDetailStandardVO=
+                dubboSeckillSpuService.getSpuDetailById(spuId);
+            // 将SpuDetailStandardVO转换为SeckillSpuDetailSimpleVO
+            simpleVO=new SeckillSpuDetailSimpleVO();
+            BeanUtils.copyProperties(spuDetailStandardVO,simpleVO);
+            // 将转换后,赋好值的simpleVO保存到Redis中
+            redisTemplate.boundValueOps(seckillDetailKey).
+                    set(simpleVO,120*60*1000+ RandomUtils.nextInt(10000),
+                            TimeUnit.MILLISECONDS);
         }
-
+        // 最后的返回值一定要写!!!!
         return simpleVO;
     }
 }
