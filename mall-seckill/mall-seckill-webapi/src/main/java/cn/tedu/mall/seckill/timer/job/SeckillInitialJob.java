@@ -78,8 +78,25 @@ public class SeckillInitialJob implements Job {
                     log.info("成功为{}号sku商品预热缓存",sku.getSkuId());
                 }
             }
+            // 上面sku库存数预热完成
+            // 下面开始预热每个spu的随机码
+            // 随机码的作用简单来说就是给访问spu设置一个随机的路径
+            // 如果不知道这个随机的路径是无法访问我们spu信息的
+            // 能够减少服务器的压力
+            // 在缓存预热时我们的操作就是生成随机码并保存到Redis,以便在后续业务中获取
+            // randCodeKey=mall:seckill:spu:url:rand:code:2
+            String randCodeKey=SeckillCacheUtils.getRandCodeKey(spu.getSpuId());
+            // 判断随机码是否已经生成
+            if(redisTemplate.hasKey(randCodeKey)){
+                log.info("{}号spu商品的随机码已经缓存",spu.getSpuId());
+            }else{
+                // 生成随机码100000~999999随机生成
+                int randCode=RandomUtils.nextInt(900000)+100000;
+                redisTemplate.boundValueOps(randCodeKey)
+                        .set(randCode,125*60*1000+RandomUtils.nextInt(10000),
+                                TimeUnit.MILLISECONDS);
+                log.info("spuId为{}号的商品随机码为:{}",spu.getSpuId(),randCode);
+            }
         }
-
-
     }
 }
