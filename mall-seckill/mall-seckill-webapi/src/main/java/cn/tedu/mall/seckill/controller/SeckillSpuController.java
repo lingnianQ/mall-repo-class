@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,6 +51,16 @@ public class SeckillSpuController {
         return JsonResult.ok(simpleVO);
     }
 
+
+    @GetMapping("/{spuId}")
+    @ApiOperation("根据spuId查询秒杀spu详情")
+    @ApiImplicitParam(value = "spuId",name="spuId",required = true,
+                        dataType = "long",example = "2")
+    public JsonResult<SeckillSpuVO>  getSeckillSpuVO(
+            @PathVariable Long spuId){
+        SeckillSpuVO seckillSpuVO=seckillSpuService.getSeckillSpu(spuId);
+        return JsonResult.ok(seckillSpuVO);
+    }
 
 
 
