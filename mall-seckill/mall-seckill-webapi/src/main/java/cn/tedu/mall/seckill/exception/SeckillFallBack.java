@@ -17,6 +17,7 @@ public class SeckillFallBack {
                                              SeckillOrderAddDTO seckillOrderAddDTO,
                                              Throwable throwable){
         log.error("一个请求被降级了");
+        throwable.printStackTrace();
         return JsonResult.failed(ResponseCode.INTERNAL_SERVER_ERROR,
                 throwable.getMessage());
     }

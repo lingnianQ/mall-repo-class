@@ -34,6 +34,15 @@
         where
             spu_id=#{spuId}
     </select>
+    <!--  根据skuId减少库存数  -->
+    <update id="updateReduceStockBySkuId">
+        update
+            seckill_sku
+        set
+            seckill_stock=seckill_stock - #{quantity}
+        where
+            sku_id=#{skuId}
+    </update>
 
 
 
