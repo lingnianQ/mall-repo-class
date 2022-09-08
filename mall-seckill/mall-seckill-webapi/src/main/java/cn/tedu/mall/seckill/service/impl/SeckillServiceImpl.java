@@ -4,6 +4,8 @@ import cn.tedu.mall.common.exception.CoolSharkServiceException;
 import cn.tedu.mall.common.pojo.domain.CsmallAuthenticationInfo;
 import cn.tedu.mall.common.restful.ResponseCode;
 import cn.tedu.mall.order.service.IOmsOrderService;
+import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
+import cn.tedu.mall.pojo.order.dto.OrderItemAddDTO;
 import cn.tedu.mall.pojo.seckill.dto.SeckillOrderAddDTO;
 import cn.tedu.mall.pojo.seckill.vo.SeckillCommitVO;
 import cn.tedu.mall.seckill.service.ISeckillService;
@@ -11,11 +13,15 @@ import cn.tedu.mall.seckill.utils.SeckillCacheUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -82,9 +88,32 @@ public class SeckillServiceImpl implements ISeckillService {
             throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,
                     "对不起您要购买的商品已经售罄");
         }
-
+        // 运行到此处表示当前用户是第一次购买该商品,同时商品还有货
+        // 下面进入业务的第二阶段:将秒杀订单seckillOrderAddDTO转换成普通订单OrderAddDTO
+        // 所以我们专门编写一个方法进行转换操作
+        OrderAddDTO orderAddDTO=convertSeckillOrderToOrder(seckillOrderAddDTO);
 
         return null;
+    }
+    private OrderAddDTO convertSeckillOrderToOrder(SeckillOrderAddDTO seckillOrderAddDTO) {
+        // 实例化返回值类型对象
+        OrderAddDTO orderAddDTO=new OrderAddDTO();
+        // 将参数秒杀订单对象中同名属性赋值到OrderAddDTO
+        BeanUtils.copyProperties(seckillOrderAddDTO,orderAddDTO);
+        // seckillOrderAddDTO对象包含秒杀订单项对象seckillOrderItemAddDTO
+        // 但是普通订单orderAddDTO对象包含的是普通订单项的集合List<OrderItemAddDTO>
+        // 所以我们要将秒杀订单项转换为普通订单项,再将这个普通订单项保存到上面集合中
+        // 实例化一个普通订单项对象
+        OrderItemAddDTO orderItemAddDTO=new OrderItemAddDTO();
+        BeanUtils.copyProperties(
+            seckillOrderAddDTO.getSeckillOrderItemAddDTO(),orderItemAddDTO);
+        // 实例化普通订单项的集合,用于赋值到orderAddDTO对象的orderItems属性
+        List<OrderItemAddDTO> orderItemAddDTOs=new ArrayList<>();
+        orderItemAddDTOs.add(orderItemAddDTO);
+        // 向orderAddDTO的orderItems属性赋值
+        orderAddDTO.setOrderItems(orderItemAddDTOs);
+        // 到此为止orderAddDTO是既包含了订单信息,又包含了订单项信息的对象
+        return orderAddDTO;
     }
 
     // 业务逻辑层中获得用户信息的方法
