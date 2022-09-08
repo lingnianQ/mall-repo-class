@@ -10,6 +10,7 @@ import cn.tedu.mall.pojo.order.vo.OrderAddVO;
 import cn.tedu.mall.pojo.seckill.dto.SeckillOrderAddDTO;
 import cn.tedu.mall.pojo.seckill.model.Success;
 import cn.tedu.mall.pojo.seckill.vo.SeckillCommitVO;
+import cn.tedu.mall.seckill.config.RabbitMqComponentConfiguration;
 import cn.tedu.mall.seckill.service.ISeckillService;
 import cn.tedu.mall.seckill.utils.SeckillCacheUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -115,8 +116,12 @@ public class SeckillServiceImpl implements ISeckillService {
         success.setOrderSn(orderAddVO.getSn());
         success.setSeckillPrice(
                 seckillOrderAddDTO.getSeckillOrderItemAddDTO().getPrice());
-        // 未完待续...
-
+        // success数据准备完毕,向RabbitMQ发送消息
+        rabbitTemplate.convertAndSend(
+                RabbitMqComponentConfiguration.SECKILL_EX,
+                RabbitMqComponentConfiguration.SECKILL_RK,
+                success);
+        // 消息队列发送消息后并不会立即添加到数据库中,而是在服务器不忙时再新增到数据库
         // 将新增订单获得的orderAddVO对象转换为SeckillCommitVO后返回
         SeckillCommitVO commitVO=new SeckillCommitVO();
         BeanUtils.copyProperties(orderAddVO,commitVO);
