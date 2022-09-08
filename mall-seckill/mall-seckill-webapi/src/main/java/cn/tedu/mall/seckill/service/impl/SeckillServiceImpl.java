@@ -7,6 +7,7 @@ import cn.tedu.mall.order.service.IOmsOrderService;
 import cn.tedu.mall.pojo.seckill.dto.SeckillOrderAddDTO;
 import cn.tedu.mall.pojo.seckill.vo.SeckillCommitVO;
 import cn.tedu.mall.seckill.service.ISeckillService;
+import cn.tedu.mall.seckill.utils.SeckillCacheUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -42,7 +43,45 @@ public class SeckillServiceImpl implements ISeckillService {
         // 第一阶段:利用redis检查重复购买和是否有库存
         // 从方法参数的订单项中获得skuId
         Long skuId=seckillOrderAddDTO.getSeckillOrderItemAddDTO().getSkuId();
-
+        Long userId=getUserId();
+        // 有了userId和skuId相当于知道了谁买了什么
+        // 秒杀业务规定,一个用户只能购买一个skuId的商品一次
+        // 所以我们可以根据userId和skuId判断当前用户是否已经购买过
+        // 先获得该用户对该商品购买的key
+        // mall:seckill:reseckill:[skuId]:[userId]
+        String reseckillCheckKey=
+            SeckillCacheUtils.getReseckillCheckKey(skuId,userId);
+        // 使用上面生成的Key利用Redis的功能调用increment()方法
+        // increment是增长的意思,方法效果如下
+        // 1.如果当前的key不存在,redis会创建这个key,并保存他的值为1
+        // 2.如果当前的key存在,redis会给当前值加1,例如现在值是1,运行方法后会变为2
+        // 3.方法会将新增之后的值返回
+        Long seckillTimes=
+            stringRedisTemplate.boundValueOps(reseckillCheckKey).increment();
+        // seckillTimes实际就是当前用户第几次购买这个商品了
+        if(seckillTimes>1){
+            // 购买次数超过1,证明已经购买过,终止业务,抛出异常
+            throw new CoolSharkServiceException(ResponseCode.FORBIDDEN,
+                            "您已经购买过该商品了!");
+        }
+        // 程序运行到此处,表示当前用户是第一次购买该商品
+        // 下面检查是否有库存
+        // 获得库存数的key
+        String seckillSkuCountKey=SeckillCacheUtils.getStockKey(skuId);
+        // 根据当前key从redis中获得库存数
+        // 使用decrement()方法,将当前skuId商品库存-1之后返回
+        Long leftStock=stringRedisTemplate
+                .boundValueOps(seckillSkuCountKey).decrement();
+        // leftStock是当前用户购买后剩余的库存数
+        // 如果leftStock值为0,表示当前用户购买到了最后一件商品
+        // 所以判断leftStock<0时,才是没有货的情况
+        if(leftStock<0){
+            // 将当前用户购买此商品的次数减为0
+            stringRedisTemplate.boundValueOps(reseckillCheckKey).decrement();
+            // 因为库存不足抛出异常
+            throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,
+                    "对不起您要购买的商品已经售罄");
+        }
 
 
         return null;
