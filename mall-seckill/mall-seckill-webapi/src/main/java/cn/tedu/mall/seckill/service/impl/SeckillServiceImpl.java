@@ -6,7 +6,9 @@ import cn.tedu.mall.common.restful.ResponseCode;
 import cn.tedu.mall.order.service.IOmsOrderService;
 import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderItemAddDTO;
+import cn.tedu.mall.pojo.order.vo.OrderAddVO;
 import cn.tedu.mall.pojo.seckill.dto.SeckillOrderAddDTO;
+import cn.tedu.mall.pojo.seckill.model.Success;
 import cn.tedu.mall.pojo.seckill.vo.SeckillCommitVO;
 import cn.tedu.mall.seckill.service.ISeckillService;
 import cn.tedu.mall.seckill.utils.SeckillCacheUtils;
@@ -92,8 +94,34 @@ public class SeckillServiceImpl implements ISeckillService {
         // 下面进入业务的第二阶段:将秒杀订单seckillOrderAddDTO转换成普通订单OrderAddDTO
         // 所以我们专门编写一个方法进行转换操作
         OrderAddDTO orderAddDTO=convertSeckillOrderToOrder(seckillOrderAddDTO);
+        // 上面的转换完成,所有订单信息都已经被赋值,但是用户Id不会被赋值
+        // 为了能够保证订单顺利新增,必须为userId赋值
+        orderAddDTO.setUserId(userId);
+        // 信息完成完整后直接调用dubbo实现新增订单的功能
+        OrderAddVO orderAddVO=dubboOrderService.addOrder(orderAddDTO);
+        // 第三部分:将秒杀成功信息发送到RabbitMQ中进行进一步处理
+        // 我们向RabbitMQ中发送消息的目标是向sucesss表中添加数据,保存秒杀成功信息
+        // 保存秒杀成功信息是典型的不急迫运行的操作
+        // 能够容忍延迟,特别适合消息队列的操作
+        // 在并发高时,进行削峰填谷,在不忙时再进行操作
+        // 实例化Success对象
+        Success success=new Success();
+        // Success对象中有大多数属性来自sku实体,秒杀订单项就是对sku实体的描述
+        // 可以将秒杀订单项实体的同名属性赋值给success
+        BeanUtils.copyProperties(
+                seckillOrderAddDTO.getSeckillOrderItemAddDTO(),success);
+        // 补全缺少的信息
+        success.setUserId(userId);
+        success.setOrderSn(orderAddVO.getSn());
+        success.setSeckillPrice(
+                seckillOrderAddDTO.getSeckillOrderItemAddDTO().getPrice());
+        // 未完待续...
 
-        return null;
+        // 将新增订单获得的orderAddVO对象转换为SeckillCommitVO后返回
+        SeckillCommitVO commitVO=new SeckillCommitVO();
+        BeanUtils.copyProperties(orderAddVO,commitVO);
+        // 返回commitVO!!!!!
+        return commitVO;
     }
     private OrderAddDTO convertSeckillOrderToOrder(SeckillOrderAddDTO seckillOrderAddDTO) {
         // 实例化返回值类型对象
