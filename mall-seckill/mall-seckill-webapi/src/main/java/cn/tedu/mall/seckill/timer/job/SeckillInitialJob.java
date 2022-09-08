@@ -88,7 +88,9 @@ public class SeckillInitialJob implements Job {
             String randCodeKey=SeckillCacheUtils.getRandCodeKey(spu.getSpuId());
             // 判断随机码是否已经生成
             if(redisTemplate.hasKey(randCodeKey)){
-                log.info("{}号spu商品的随机码已经缓存",spu.getSpuId());
+                // 如果已经有随机码的key存在,取出它,下面输出,方便测试时使用
+                String code=redisTemplate.boundValueOps(randCodeKey).get()+"";
+                log.info("{}号spu商品的随机码已经缓存:{}",spu.getSpuId(),code);
             }else{
                 // 生成随机码100000~999999随机生成
                 int randCode=RandomUtils.nextInt(900000)+100000;
