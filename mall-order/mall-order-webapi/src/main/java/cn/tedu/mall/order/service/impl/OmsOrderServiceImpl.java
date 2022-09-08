@@ -143,7 +143,9 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         order.setId(id);
 
         // 赋值用户id
-        order.setUserId(getUserId());
+        if(order.getUserId()==null) {
+            order.setUserId(getUserId());
+        }
 
         // 赋值sn(订单号)
         order.setSn(UUID.randomUUID().toString());
