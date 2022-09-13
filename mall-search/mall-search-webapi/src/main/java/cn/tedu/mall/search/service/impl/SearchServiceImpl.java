@@ -1,22 +1,6 @@
 package cn.tedu.mall.search.service.impl;
 
-import cn.tedu.mall.common.restful.JsonPage;
-import cn.tedu.mall.pojo.product.model.Spu;
-import cn.tedu.mall.pojo.search.entity.SpuEntity;
-import cn.tedu.mall.pojo.search.entity.SpuForElastic;
-import cn.tedu.mall.product.service.front.IForFrontSpuService;
-import cn.tedu.mall.search.repository.SpuForElasticRepository;
-import cn.tedu.mall.search.service.ISearchService;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.DubboReference;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
 
 //@Service
 //@Slf4j
