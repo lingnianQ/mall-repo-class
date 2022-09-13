@@ -1,5 +1,6 @@
 package cn.tedu.mall.seckill.timer.config;
 
+import cn.tedu.mall.seckill.timer.job.SeckillBloomInitialJob;
 import cn.tedu.mall.seckill.timer.job.SeckillInitialJob;
 import org.quartz.*;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +30,25 @@ public class QuartzConfig {
                 .withSchedule(cron)
                 .build();
     }
+
+    // 布隆过滤器的加载
+    @Bean
+    public JobDetail seckillBloomJobDetail(){
+        return JobBuilder.newJob(SeckillBloomInitialJob.class)
+                .withIdentity("SeckillBloom")
+                .storeDurably()
+                .build();
+    }
+    @Bean
+    public Trigger seckillBloomTrigger(){
+        return TriggerBuilder.newTrigger()
+                .forJob(seckillBloomJobDetail())
+                .withIdentity("SeckillBloomTrigger")
+                .withSchedule(CronScheduleBuilder.cronSchedule("0 0/1 * * * ?"))
+                .build();
+    }
+
+
 
 
 }
