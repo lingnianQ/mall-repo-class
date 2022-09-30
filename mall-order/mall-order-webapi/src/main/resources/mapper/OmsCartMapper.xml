@@ -17,8 +17,31 @@
         <result column="data" property="data"/>
     </resultMap>
 
-
-
+    <!--   定义查询时所有类名的sql片段   -->
+    <sql id="SimpleQueryFields">
+        <if test="true">
+            id,
+            user_id,
+            sku_id,
+            title,
+            main_picture,
+            price,
+            quantity,
+            gmt_create,
+            gmt_modified
+        </if>
+    </sql>
+    <!-- 查询当前购物中是否已经包含指定用户的指定sku商品  -->
+    <select id="selectExistsCart" resultMap="BaseResultMap">
+        select
+            <include refid="SimpleQueryFields"  />
+        from
+            oms_cart
+        where
+            user_id=#{userId}
+        and
+            sku_id=#{skuId}
+    </select>
 
 </mapper>
 
