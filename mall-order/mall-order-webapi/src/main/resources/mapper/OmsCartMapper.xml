@@ -60,13 +60,14 @@
             #{quantity}
         )
     </insert>
-
-
-
-
-
+    <!--  修改购物车中sku的数量  -->
+    <update id="updateQuantityById">
+        update
+            oms_cart
+        set
+            quantity=#{quantity}
+        where
+            id=#{id}
+    </update>
 </mapper>
-
-
-
 
