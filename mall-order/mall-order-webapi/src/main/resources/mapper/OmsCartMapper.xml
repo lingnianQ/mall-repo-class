@@ -42,6 +42,28 @@
         and
             sku_id=#{skuId}
     </select>
+    <!--   新增sku信息到购物车   -->
+    <insert id="saveCart" useGeneratedKeys="true" keyProperty="id">
+        insert into oms_cart(
+            user_id,
+            sku_id,
+            title,
+            main_picture,
+            price,
+            quantity
+        ) values(
+            #{userId},
+            #{skuId},
+            #{title},
+            #{mainPicture},
+            #{price},
+            #{quantity}
+        )
+    </insert>
+
+
+
+
 
 </mapper>
 
