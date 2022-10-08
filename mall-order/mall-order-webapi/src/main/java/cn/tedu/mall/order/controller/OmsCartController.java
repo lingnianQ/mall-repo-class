@@ -1,16 +1,19 @@
 package cn.tedu.mall.order.controller;
 
+import cn.tedu.mall.common.restful.JsonPage;
 import cn.tedu.mall.common.restful.JsonResult;
 import cn.tedu.mall.order.service.IOmsCartService;
+import cn.tedu.mall.order.utils.WebConsts;
 import cn.tedu.mall.pojo.order.dto.CartAddDTO;
+import cn.tedu.mall.pojo.order.vo.CartStandardVO;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/oms/cart")
@@ -34,5 +37,27 @@ public class OmsCartController {
         omsCartService.addCart(cartAddDTO);
         return JsonResult.ok("新增sku到购物车完成!!");
     }
+
+    @GetMapping("/list")
+    @ApiOperation("根据用户id分页查询购物车sku列表")
+    @ApiImplicitParams({
+            @ApiImplicitParam(value = "页码",name="page",example = "1"),
+            @ApiImplicitParam(value = "每页条数",name="pageSize", example = "3")
+    })
+    @PreAuthorize("hasAuthority('ROLE_user')")
+    public JsonResult<JsonPage<CartStandardVO>> listCartsByPage(
+            // 控制器方法参数可以添加@RequestParam注解来设置默认值
+            // WebConsts.DEFAULT_PAGE是当page参数为null时,事先定义好的常量
+            @RequestParam(required = false,defaultValue = WebConsts.DEFAULT_PAGE)
+            Integer page,
+            @RequestParam(required = false,defaultValue = WebConsts.DEFAULT_PAGE_SIZE)
+            Integer pageSize){
+        // 常规调用业务逻辑层方法即可
+        JsonPage<CartStandardVO> jsonPage=omsCartService.listCarts(page,pageSize);
+        return JsonResult.ok(jsonPage);
+    }
+
+
+
 
 }

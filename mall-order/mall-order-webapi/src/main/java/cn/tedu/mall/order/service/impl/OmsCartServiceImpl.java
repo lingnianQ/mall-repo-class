@@ -10,12 +10,16 @@ import cn.tedu.mall.pojo.order.dto.CartAddDTO;
 import cn.tedu.mall.pojo.order.dto.CartUpdateDTO;
 import cn.tedu.mall.pojo.order.model.OmsCart;
 import cn.tedu.mall.pojo.order.vo.CartStandardVO;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -53,9 +57,17 @@ public class OmsCartServiceImpl implements IOmsCartService {
         }
     }
 
+    // 根据登录用户id分页查询购物车中商品信息
     @Override
     public JsonPage<CartStandardVO> listCarts(Integer page, Integer pageSize) {
-        return null;
+        // 从SpringSecurity中获得用户id
+        Long userId=getUserId();
+        // PageHelper设置分页查询条件
+        PageHelper.startPage(page,pageSize);
+        // 执行查询,这次查询会自动在sql语句末尾添加limit关键字完成分页
+        List<CartStandardVO> list=omsCartMapper.selectCartsByUserId(userId);
+        // list就是分页查询的数据,下面要将分页数据和分页信息转换为JsonPage返回
+        return JsonPage.restPage(new PageInfo<>(list));
     }
 
     @Override
