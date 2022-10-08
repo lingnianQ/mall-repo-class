@@ -25,6 +25,8 @@ public interface OmsCartMapper {
     // 根据用户选中的id,删除购物车中的商品(支持一次删除多个商品)
     int deleteCartsByIds(Long[] ids);
 
+    // 清空指定用户购物车中所有sku商品
+    int deleteCartsByUserId(Long userId);
 
 
 }

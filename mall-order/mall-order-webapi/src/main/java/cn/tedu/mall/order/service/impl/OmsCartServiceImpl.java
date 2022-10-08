@@ -15,6 +15,7 @@ import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -83,7 +84,12 @@ public class OmsCartServiceImpl implements IOmsCartService {
 
     @Override
     public void removeAllCarts() {
-
+        Long userId=getUserId();
+        int rows=omsCartMapper.deleteCartsByUserId(userId);
+        if(rows==0){
+            throw new CoolSharkServiceException(ResponseCode.NOT_FOUND,
+                    "您的购物车已经是空的了!");
+        }
     }
 
     @Override
@@ -93,7 +99,14 @@ public class OmsCartServiceImpl implements IOmsCartService {
 
     @Override
     public void updateQuantity(CartUpdateDTO cartUpdateDTO) {
-
+        // 因为执行修改的方法参数要求为OmsCart
+        // 但是当前业务逻辑方法参数为CartUpdateDTO
+        // 所以需要先实例化OmsCart对象
+        OmsCart omsCart=new OmsCart();
+        // 将CartUpdateDTO对象中的同名属性,赋值到omsCart中
+        BeanUtils.copyProperties(cartUpdateDTO,omsCart);
+        // 执行修改
+        omsCartMapper.updateQuantityById(omsCart);
     }
 
     // 业务逻辑层中有获得当前登录用户信息的需求

@@ -5,6 +5,7 @@ import cn.tedu.mall.common.restful.JsonResult;
 import cn.tedu.mall.order.service.IOmsCartService;
 import cn.tedu.mall.order.utils.WebConsts;
 import cn.tedu.mall.pojo.order.dto.CartAddDTO;
+import cn.tedu.mall.pojo.order.dto.CartUpdateDTO;
 import cn.tedu.mall.pojo.order.vo.CartStandardVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -70,6 +71,24 @@ public class OmsCartController {
         omsCartService.removeCart(ids);
         return JsonResult.ok("删除功能运行完毕");
     }
+
+    @PostMapping("/delete/all")
+    @ApiOperation("清空当前登录用户的购物车")
+    @PreAuthorize("hasRole('user')")
+    public JsonResult removeCartsByUserId(){
+        omsCartService.removeAllCarts();
+        return JsonResult.ok("购物车已清空");
+    }
+
+
+    @PostMapping("/update/quantity")
+    @ApiOperation("修改购物车中sku数量")
+    @PreAuthorize("hasRole('user')")
+    public JsonResult updateQuantity(@Validated CartUpdateDTO cartUpdateDTO){
+        omsCartService.updateQuantity(cartUpdateDTO);
+        return JsonResult.ok("修改完成!");
+    }
+
 
 
 
