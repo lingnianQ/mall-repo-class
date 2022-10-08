@@ -94,7 +94,9 @@ public class OmsCartServiceImpl implements IOmsCartService {
 
     @Override
     public void removeUserCarts(OmsCart omsCart) {
-
+        // 直接调用OmsCart删除购物车的方法即可
+        // 因为用户有可能是点击立即购买来生成订单,这样购物车中就不需要删除任何内容
+        omsCartMapper.deleteCartByUserIdAndSkuId(omsCart);
     }
 
     @Override
