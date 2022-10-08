@@ -22,7 +22,7 @@
             #{ooi.skuId},
             #{ooi.title},
             #{ooi.barCode},
-            #{data}
+            #{ooi.data}
             #{ooi.mainPicture},
             #{ooi.price},
             #{ooi.quantity}
