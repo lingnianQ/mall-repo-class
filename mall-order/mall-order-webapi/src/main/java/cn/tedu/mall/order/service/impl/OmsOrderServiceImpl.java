@@ -123,7 +123,17 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         // OmsOrderItemMapper直接调用批量新增订单项的方法即可
         omsOrderItemMapper.insertOrderItemList(omsOrderItems);
         // 第三部分:返回订单信息给前端
-        return null;
+        // 当前业务逻辑层方法返回值为OrderAddVO,这是业务要求我们的返回类型
+        // 我们需要做的就是实例化这个对象,然后为它赋所有值
+        OrderAddVO addVO=new OrderAddVO();
+        // 给addVO各个属性赋值
+        addVO.setId(order.getId());
+        addVO.setSn(order.getSn());
+        addVO.setCreateTime(order.getGmtOrder());
+        addVO.setPayAmount(order.getAmountOfActualPay());
+        // 最后千万别忘了返回
+        // 返回addVO!!!!
+        return addVO;
     }
 
     private void loadOrder(OmsOrder order) {
