@@ -13,6 +13,7 @@ import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderItemAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderListTimeDTO;
 import cn.tedu.mall.pojo.order.dto.OrderStateUpdateDTO;
+import cn.tedu.mall.pojo.order.model.OmsCart;
 import cn.tedu.mall.pojo.order.model.OmsOrder;
 import cn.tedu.mall.pojo.order.model.OmsOrderItem;
 import cn.tedu.mall.pojo.order.vo.OrderAddVO;
@@ -108,11 +109,19 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
                 throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,
                         "库存不足!");
             }
-
+            // 2.删除购物车信息
+            OmsCart omsCart=new OmsCart();
+            omsCart.setUserId(order.getUserId());
+            omsCart.setSkuId(skuId);
+            // 执行删除操作
+            omsCartService.removeUserCarts(omsCart);
         }
-
-
-
+        // 3.执行新增订单
+        // OmsOrderMapper直接调用新增订单的方法即可
+        omsOrderMapper.insertOrder(order);
+        // 4.新增订单项
+        // OmsOrderItemMapper直接调用批量新增订单项的方法即可
+        omsOrderItemMapper.insertOrderItemList(omsOrderItems);
         // 第三部分:返回订单信息给前端
         return null;
     }
