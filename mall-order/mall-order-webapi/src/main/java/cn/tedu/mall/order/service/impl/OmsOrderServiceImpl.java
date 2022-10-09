@@ -10,13 +10,16 @@ import cn.tedu.mall.order.service.IOmsCartService;
 import cn.tedu.mall.order.service.IOmsOrderService;
 import cn.tedu.mall.order.utils.IdGeneratorUtils;
 import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
+import cn.tedu.mall.pojo.order.dto.OrderItemAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderListTimeDTO;
 import cn.tedu.mall.pojo.order.dto.OrderStateUpdateDTO;
 import cn.tedu.mall.pojo.order.model.OmsOrder;
+import cn.tedu.mall.pojo.order.model.OmsOrderItem;
 import cn.tedu.mall.pojo.order.vo.OrderAddVO;
 import cn.tedu.mall.pojo.order.vo.OrderDetailVO;
 import cn.tedu.mall.pojo.order.vo.OrderListVO;
 import cn.tedu.mall.product.service.order.IForOrderSkuService;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -30,6 +33,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 // 后期秒杀业务也需要生成订单,可以直接调用当前类中的方法
@@ -62,9 +67,51 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         // orderAddDTO中的属性较少,order对象还有一些属性不能被赋值,需要我们手动计算或赋值
         // 我们可以专门编写一个方法,在这个方法中处理
         loadOrder(order);
+        // 运行完上面的方法,order的赋值就完成了
+        // 下面开始为当前订单包含的订单项OmsOrderItem赋值
+        // orderAddDTO中包含了一个OrderItemAddDTO类型的集合
+        // 我们需要将这个集合转换为OmsOrderItem类型
+        // 首先如果OrderItemAddDTO集合是空,是要抛出异常的
+        List<OrderItemAddDTO> itemAddDTOs=orderAddDTO.getOrderItems();
+        if(itemAddDTOs==null || itemAddDTOs.isEmpty()){
+            // 如果订单参数中一件商品都没有,就无法继续生成订单了
+            throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,
+                    "订单中必须至少包含一件商品");
+        }
+        // 先将要获得的最终结果的集合实例化
+        List<OmsOrderItem> omsOrderItems=new ArrayList<>();
+        // 遍历DTO的集合
+        for(OrderItemAddDTO addDTO : itemAddDTOs){
+            // 还是先将当前遍历的addDTO对象转化为OmsOrderItem类型对象
+            OmsOrderItem orderItem=new OmsOrderItem();
+            BeanUtils.copyProperties(addDTO,orderItem);
+            // 上面的赋值操作后,仍然有个别属性没有被赋值,下面进行赋值
+            // 赋值id
+            Long itemId=IdGeneratorUtils.getDistributeId("order_item");
+            orderItem.setId(itemId);
+            // 赋值orderId
+            orderItem.setOrderId(order.getId());
+            // 将赋好值的orderItem对象保存到集合中
+            omsOrderItems.add(orderItem);
+            // 第二部分:执行数据库操作
+            // 我们减少库存和删除选中的购物车信息都是有skuId作为依据的
+            // 所以上述两个操作在当前循环中继续编写即可
+            // 1.减少库存
+            // 获得skuId
+            Long skuId=orderItem.getSkuId();
+            // 执行减少库存的方法(dubbo调用product模块写好的功能)
+            int rows=dubboSkuService.reduceStockNum(skuId,orderItem.getQuantity());
+            // 判断执行修改影响的行数
+            if(rows==0){
+                log.warn("商品skuId:{},库存不足",skuId);
+                //库存不足不能继续运行,抛出异常,seata会自动终止事务
+                throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,
+                        "库存不足!");
+            }
+
+        }
 
 
-        // 第二部分:执行数据库操作
 
         // 第三部分:返回订单信息给前端
         return null;
