@@ -21,6 +21,8 @@ import cn.tedu.mall.pojo.order.vo.OrderDetailVO;
 import cn.tedu.mall.pojo.order.vo.OrderListVO;
 import cn.tedu.mall.product.service.order.IForOrderSkuService;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -30,6 +32,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -192,7 +195,18 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
         // 业务逻辑层要判断用户指定的时间信息,必须保证它们合理才能进行后面的操作
         // 编写一个方法,来判断时间的可用
         validateTimeAndLoadTimes(orderListTimeDTO);
-        return null;
+        // 获得用户Id
+        Long userId=getUserId();
+        // 将用户Id赋值到参数中
+        orderListTimeDTO.setUserId(userId);
+        // 设置分页条件
+        PageHelper.startPage(orderListTimeDTO.getPage(),
+                             orderListTimeDTO.getPageSize());
+        // 调用mapper编写的关联查询方法
+        List<OrderListVO> list=omsOrderMapper.
+                                selectOrdersBetweenTimes(orderListTimeDTO);
+        // 别忘了返回!!!
+        return JsonPage.restPage(new PageInfo<>(list));
     }
 
     private void validateTimeAndLoadTimes(OrderListTimeDTO orderListTimeDTO) {
