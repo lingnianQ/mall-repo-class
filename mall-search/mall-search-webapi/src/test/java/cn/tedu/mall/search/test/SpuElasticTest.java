@@ -7,18 +7,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+// 下面注解必须加!!!!!!
 @SpringBootTest
-public class LoadTest {
-
+public class SpuElasticTest {
     @Autowired
     private ISearchService searchService;
 
     @Test
-    void loadData(){
+    void LoadData(){
         searchService.loadSpuByPage();
         System.out.println("ok");
     }
-
 
     @Autowired
     private SpuForElasticRepository repository;
@@ -28,15 +27,6 @@ public class LoadTest {
         spus.forEach(spu -> System.out.println(spu));
     }
 
-    // 根据title查询数据
-    @Test
-    void getSpuByTitle(){
-        Iterable<SpuForElastic> it=
-                repository.querySpuForElasticsByTitleMatches("手机华为小米");
-//        Iterable<SpuForElastic> it=
-//                repository.querySearch("手机");
-        it.forEach(e -> System.out.println(e));
-    }
 
 
 

@@ -9,6 +9,7 @@ import cn.tedu.mall.search.repository.SpuForElasticRepository;
 import cn.tedu.mall.search.service.ISearchService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -39,8 +40,18 @@ public class SearchServiceImpl implements ISearchService {
             List<SpuForElastic> esSpus=new ArrayList<>();
             // 遍历spus集合 进行转换,并新增到esSpus
             for(Spu spu : spus.getList()){
-
+                SpuForElastic esSpu=new SpuForElastic();
+                BeanUtils.copyProperties(spu,esSpu);
+                // 将转换完成的对象添加到esSpus集合中
+                esSpus.add(esSpu);
             }
+            // esSpus集合中已经包含了本页的数据,可以执行批量新增到ES
+            spuRepository.saveAll(esSpus);
+            log.info("成功加载了第{}页数据",i);
+            // 为下次循环做准备
+            i++;
+            // 确定总页数
+            pages=spus.getTotalPage();
         }while(i<=pages);
 
 
