@@ -16,6 +16,9 @@ public interface OmsOrderMapper {
     // 查询当前用户指定时间范围内的所有订单信息(包含订单项)
     List<OrderListVO> selectOrdersBetweenTimes(OrderListTimeDTO orderListTimeDTO);
 
+    // 动态修改订单,参数是omsOrder对象
+    // 参数对象中必须有id,id不可修改,其他属性不为空就修改为当前属性值
+    int updateOrderById(OmsOrder order);
 
 
 }
