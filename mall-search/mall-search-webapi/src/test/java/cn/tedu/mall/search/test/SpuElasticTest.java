@@ -27,6 +27,14 @@ public class SpuElasticTest {
         spus.forEach(spu -> System.out.println(spu));
     }
 
+    @Test
+    void getSpusByTitle(){
+        // 根据title查询数据
+        Iterable<SpuForElastic> it=
+                repository.querySpuForElasticsByTitleMatches("手机电脑");
+        it.forEach(spu -> System.out.println(spu));
+    }
+
 
 
 
