@@ -81,6 +81,25 @@ public class SeckillInitialJob implements Job {
                     log.info("成功为{}号sku商品预热缓存",sku.getSkuId());
                 }
             }
+            // 上面为止完成了库存数的预热
+            // 下面开始预热每个spu商品对应的随机码
+            // 随机码就是一个随机数,范围可以自己定
+            // 随机码终会在生成订单前进行验证,以减轻服务器压力
+            // 我们的操作就是生成这个随机数,保存到redis中
+            // mall:seckill:spu:url:rand:code:2
+            String randCodeKey=SeckillCacheUtils.getRandCodeKey(spu.getSpuId());
+            // 判断随机码是否已经在redis中
+            if(redisTemplate.hasKey(randCodeKey)){
+                int randCode=(int)redisTemplate.boundValueOps(randCodeKey).get();
+                log.info("{}号spu商品的随机码已经缓存:{}",spu.getSpuId(),randCode);
+            }else{
+                // 生成随机码  范围:100000~999999
+                int randCode=RandomUtils.nextInt(900000)+100000;
+                redisTemplate.boundValueOps(randCodeKey)
+                        .set(randCode,10*60*1000+RandomUtils.nextInt(10000),
+                        TimeUnit.MILLISECONDS);
+                log.info("spuId为{}号的商品生成的随机码为:{}",spu.getSpuId(),randCode);
+            }
 
         }
 
