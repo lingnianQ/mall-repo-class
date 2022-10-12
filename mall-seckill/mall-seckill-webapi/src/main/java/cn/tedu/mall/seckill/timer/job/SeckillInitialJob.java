@@ -1,8 +1,13 @@
 package cn.tedu.mall.seckill.timer.job;
 
+import cn.tedu.mall.common.config.PrefixConfiguration;
+import cn.tedu.mall.pojo.seckill.model.SeckillSku;
+import cn.tedu.mall.pojo.seckill.model.SeckillSpu;
 import cn.tedu.mall.seckill.mapper.SeckillSkuMapper;
 import cn.tedu.mall.seckill.mapper.SeckillSpuMapper;
+import cn.tedu.mall.seckill.utils.SeckillCacheUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.math.RandomUtils;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -10,6 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class SeckillInitialJob implements Job {
@@ -36,11 +45,44 @@ public class SeckillInitialJob implements Job {
     最后结合Redis天生单线程的特性,避免线程安全问题方式超卖
      */
     @Autowired
-    private StringRedisTemplate stringRedisTemplatel;
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+        // 当前方法是缓存预热操作
+        // 它执行的时间是秒杀开始前5分钟,所以获取一个5分钟后的时间对象
+        LocalDateTime time=LocalDateTime.now().plusMinutes(5);
+        // 查询这个时间所有进行秒杀的商品
+        List<SeckillSpu> seckillSpus=spuMapper.findSeckillSpusByTime(time);
+        // 遍历当前批次所有秒杀的spu
+        for(SeckillSpu spu: seckillSpus){
+            // spu是商品的品类,必须确定规格也就是确定sku后,才能明确库存
+            // 所以我们要根据spuId查询sku,然后将sku的库存数保存到Redis
+            List<SeckillSku> seckillSkus=skuMapper.
+                    findSeckillSkusBySpuId(spu.getSpuId());
+            // 遍历获得了当前spu对应的sku列表,还要遍历sku列表才能保存库存数
+            for(SeckillSku sku: seckillSkus){
+                log.info("开始将{}号sku商品库存预热到Redis",sku.getSkuId());
+                // 要在操作Redis之前,获得key常量
+                // SeckillCacheUtils.getStockKey是获得事先准备好的字符串常量的方法
+                // 它的实际的值为  mall:seckill:sku:stock:1
+                String skuStockKey=SeckillCacheUtils.getStockKey(sku.getSkuId());
+                // 检查Redis中是否已经包含了这个key
+                if(redisTemplate.hasKey(skuStockKey)){
+                    // 如果key已经存在,证明之前已经缓存过了,直接跳过
+                    log.info("{}号sku商品已经缓存过了",sku.getSkuId());
+                }else{
+                    // 如果key不存在,就要将我们sku对象的库存数保存到Redis
+                    // 使用stringRedisTemplate保存库存数到Redis
+                    stringRedisTemplate.boundValueOps(skuStockKey)
+                            .set(sku.getSeckillStock()+"",
+                                   10*60*1000+ RandomUtils.nextInt(10000),
+                                    TimeUnit.MILLISECONDS);
+                    log.info("成功为{}号sku商品预热缓存",sku.getSkuId());
+                }
+            }
 
+        }
 
 
 
