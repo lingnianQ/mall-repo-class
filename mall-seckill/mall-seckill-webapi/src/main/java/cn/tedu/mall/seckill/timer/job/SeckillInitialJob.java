@@ -102,8 +102,5 @@ public class SeckillInitialJob implements Job {
             }
 
         }
-
-
-
     }
 }
