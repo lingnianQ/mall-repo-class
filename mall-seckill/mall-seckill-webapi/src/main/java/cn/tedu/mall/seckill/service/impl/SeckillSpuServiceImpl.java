@@ -1,6 +1,8 @@
 package cn.tedu.mall.seckill.service.impl;
 
+import cn.tedu.mall.common.exception.CoolSharkServiceException;
 import cn.tedu.mall.common.restful.JsonPage;
+import cn.tedu.mall.common.restful.ResponseCode;
 import cn.tedu.mall.pojo.product.vo.SpuDetailStandardVO;
 import cn.tedu.mall.pojo.product.vo.SpuStandardVO;
 import cn.tedu.mall.pojo.seckill.model.SeckillSpu;
@@ -9,6 +11,7 @@ import cn.tedu.mall.pojo.seckill.vo.SeckillSpuVO;
 import cn.tedu.mall.product.service.seckill.IForSeckillSpuService;
 import cn.tedu.mall.seckill.mapper.SeckillSpuMapper;
 import cn.tedu.mall.seckill.service.ISeckillSpuService;
+import cn.tedu.mall.seckill.utils.SeckillCacheUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -70,9 +75,80 @@ public class SeckillSpuServiceImpl implements ISeckillSpuService {
         return JsonPage.restPage(new PageInfo<>(seckillSpuVOs));
     }
 
+    // 根据SpuId查询spu详情(返回值包含秒杀信息和常规信息)
     @Override
     public SeckillSpuVO getSeckillSpu(Long spuId) {
-        return null;
+        // 最终完整版的代码,这里要先获取布隆过滤器
+        // 判断参数spuId是否在布隆过滤器中,如果不在直接抛出异常
+
+        // 获取要使用的spu对应的常量
+        // mall:seckill:spu:vo:2
+        String seckillSpuKey= SeckillCacheUtils.getSeckillSpuVOKey(spuId);
+        // 声明要返回的对象类型
+        SeckillSpuVO seckillSpuVO=null;
+        // 判断Redis中是否包含这个Key
+        if(redisTemplate.hasKey(seckillSpuKey)){
+            // 直接从Redis中获取即可
+            seckillSpuVO=(SeckillSpuVO)redisTemplate
+                    .boundValueOps(seckillSpuKey).get();
+        }else{
+            // 如果Redis中没有这个Key
+            // 要从数据库中查询秒杀spu信息和常规spu信息赋值到seckillSpuVO对象中
+            // 先查询秒杀信息:
+            SeckillSpu seckillSpu= seckillSpuMapper.findSeckillSpuById(spuId);
+            // 判断seckillSpu是否为空(因为布隆过滤器可能产生误判)
+            if(seckillSpu==null){
+                throw new CoolSharkServiceException(ResponseCode.NOT_FOUND,
+                        "您访问的商品不存在");
+            }
+            // 到此为止,我们已经查询出了spu商品的秒杀信息,下面要查询常规信息
+            // dubbo调用product模块的方法获得spu常规信息
+            SpuStandardVO spuStandardVO= dubboSeckillSpuService
+                                                    .getSpuById(spuId);
+            seckillSpuVO=new SeckillSpuVO();
+            // 将常规spu信息对象的同名属性赋值给seckillSpuVO
+            BeanUtils.copyProperties(spuStandardVO,seckillSpuVO);
+            // 最后将秒杀信息赋值到seckillSpuVO
+            seckillSpuVO.setSeckillListPrice(seckillSpu.getListPrice());
+            seckillSpuVO.setStartTime(seckillSpu.getStartTime());
+            seckillSpuVO.setEndTime(seckillSpu.getEndTime());
+            // seckillSpuVO 就完成了常规spu信息和秒杀spu信息的赋值过程
+            // 将这个对象保存到Redis中
+            redisTemplate.boundValueOps(seckillSpuKey).set(
+                    seckillSpuVO,10*60*1000+RandomUtils.nextInt(10000),
+                    TimeUnit.MILLISECONDS);
+        }
+        // 返回前最后的步骤是给seckillSpuVO的url属性赋值
+        // 一旦给url属性赋值,就意味着当前用户可以提交购买订单了
+        // 必须判断当前时间是否在秒杀时间段内,才能决定是否给url赋值
+        LocalDateTime nowTime=LocalDateTime.now();
+        // 当前是高并发状态,不要连接数据库去判断时间
+        // 我们使用seckillSpuVO中的开始时间和结束时间属性去判断
+        // 判断的基本原则是开始时间小于当前时间小于结束时间
+        // 本次我们使用"时间差"对象Duration来判断时间关系
+        // 我们会利用Duration提供的between方法来获得两个时间的时间差
+        // 这个方法有个特征,如果时间差是负数,会返回一个negative的状态
+        // 判断当前时间大于开始时间
+        //                             2022-10-12 16:45   , 2022-10-12 16:40
+        Duration afterTime=Duration.between(nowTime,seckillSpuVO.getStartTime());
+        // 判断结束时间大于当前时间
+        Duration beforeTime=Duration.between(seckillSpuVO.getEndTime(),nowTime);
+        // 简单来说, between方法中两个时间参数,前面的大后面的小就会返回negative
+        // 上面两个变量如果返回值都是negative,
+        // 就证明当前时间大于开始时间,结束时间大于当前时间
+        if(afterTime.isNegative()  &&  beforeTime.isNegative()){
+            // 进入if表示时间是正确的,要授权url,允许秒杀购买
+            // 根据spuId获得redis事先预热好的随机码
+            String randCodeKey=SeckillCacheUtils.getRandCodeKey(spuId);
+            // 从redis中获取随机码
+            String randCode=redisTemplate.boundValueOps(randCodeKey).get()+"";
+            // 将随机码赋值到url
+            seckillSpuVO.setUrl("/seckill/"+randCode);
+            log.info("url赋值随机码为:{}",randCode);
+        }
+        // 最后别忘了返回
+        // 最后返回的seckillSpuVO实际上是 秒杀spu信息+常规spu信息+url
+        return seckillSpuVO;
     }
 
 
