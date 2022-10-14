@@ -130,7 +130,7 @@ public class SeckillServiceImpl implements ISeckillService {
         // 最后按系统设计的返回值返回,经过分析SeckillCommitVO中的属性和OrderAddVO完全一致
         SeckillCommitVO commitVO=new SeckillCommitVO();
         // 将OrderAddVO的同名属性赋值给commitVO即可
-        BeanUtils.copyProperties(orderAddDTO,commitVO);
+        BeanUtils.copyProperties(orderAddVO,commitVO);
         //  最后别忘了返回!!!
         return commitVO;
     }
