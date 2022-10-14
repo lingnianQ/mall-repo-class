@@ -70,7 +70,7 @@ public class SeckillServiceImpl implements ISeckillService {
         Long seckillTimes=
              stringRedisTemplate.boundValueOps(reSeckillCheckKey).increment();
         // 如果这个秒杀次数值大于1,表示这个用户已经购买过这个商品
-        if(seckillTimes>1){
+        if(seckillTimes>100){
             // 不允许重复购买,抛出异常终止程序
             throw new CoolSharkServiceException(ResponseCode.FORBIDDEN,
                     "您已经购买过该商品了,本商城秒杀禁止重复购买");

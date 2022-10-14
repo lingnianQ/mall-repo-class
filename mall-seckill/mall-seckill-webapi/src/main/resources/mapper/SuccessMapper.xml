@@ -20,6 +20,32 @@
     </resultMap>
 
 
+    <!--  新增Success对象的数据库方法  -->
+    <insert id="saveSuccess" >
+        insert into success(
+            user_id,
+            user_phone,
+            sku_id,
+            title,
+            main_picture,
+            seckill_price,
+            quantity,
+            bar_code,
+            data,
+            order_sn
+        ) values(
+            #{userId},
+            #{userPhone},
+            #{skuId},
+            #{title},
+            #{mainPicture},
+            #{seckillPrice},
+            #{quantity},
+            #{barCode},
+            #{data},
+            #{orderSn}
+        )
+    </insert>
 
 
 </mapper>
