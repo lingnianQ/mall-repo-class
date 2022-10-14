@@ -6,8 +6,11 @@ import cn.tedu.mall.common.restful.ResponseCode;
 import cn.tedu.mall.order.service.IOmsOrderService;
 import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
 import cn.tedu.mall.pojo.order.dto.OrderItemAddDTO;
+import cn.tedu.mall.pojo.order.vo.OrderAddVO;
 import cn.tedu.mall.pojo.seckill.dto.SeckillOrderAddDTO;
+import cn.tedu.mall.pojo.seckill.model.Success;
 import cn.tedu.mall.pojo.seckill.vo.SeckillCommitVO;
+import cn.tedu.mall.seckill.config.RabbitMqComponentConfiguration;
 import cn.tedu.mall.seckill.service.ISeckillService;
 import cn.tedu.mall.seckill.utils.SeckillCacheUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -97,11 +100,32 @@ public class SeckillServiceImpl implements ISeckillService {
         // SeckillOrderAddDTO转换成OrderAddDTO,以实现Dubbo调用
         // 自定义一个转换方法,参数是秒杀订单,返回值是普通订单
         OrderAddDTO orderAddDTO=convertSeckillOrderToOrder(seckillOrderAddDTO);
-
-
-
-
+        // 上面完成了转换,所有订单相关信息都赋值到了orderAddDTO
+        // 但是前端信息中不会包含用户id,所有要单独赋值
+        orderAddDTO.setUserId(userId);
+        // 信息完成后,Dubbo调用新增订单的方法
+        OrderAddVO orderAddVO=dubboOrderService.addOrder(orderAddDTO);
         // 第三阶段:秒杀成功信息消息队列的发送
+        // 我们向RabbitMQ中发送Success对象,实现消息队列的方法新增success信息到数据库
+        // 因为Success对象作为秒杀成功记录来讲,并不是急迫的操作
+        // 又因为它要操作数据库,所以最后在服务器不忙时再运行,进行"削峰填谷"
+        // 实例化Success对象
+        Success success=new Success();
+        // Success中大多数属性是sku实体具备的,我们可操作的对象中,秒杀订单项是sku
+        // 所以可以将秒杀订单项的同名属性赋值到success
+        BeanUtils.copyProperties(
+                seckillOrderAddDTO.getSeckillOrderItemAddDTO(),success);
+        // 然后补全缺少的信息
+        success.setUserId(userId);
+        success.setOrderSn(orderAddVO.getSn());
+        success.setSeckillPrice(
+                seckillOrderAddDTO.getSeckillOrderItemAddDTO().getPrice());
+        // success信息完备,向RabbitM发送消息
+        rabbitTemplate.convertAndSend(
+                RabbitMqComponentConfiguration.SECKILL_EX,
+                RabbitMqComponentConfiguration.SECKILL_RK,
+                success
+        );
 
         return null;
     }
