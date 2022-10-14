@@ -4,6 +4,8 @@ import cn.tedu.mall.common.exception.CoolSharkServiceException;
 import cn.tedu.mall.common.pojo.domain.CsmallAuthenticationInfo;
 import cn.tedu.mall.common.restful.ResponseCode;
 import cn.tedu.mall.order.service.IOmsOrderService;
+import cn.tedu.mall.pojo.order.dto.OrderAddDTO;
+import cn.tedu.mall.pojo.order.dto.OrderItemAddDTO;
 import cn.tedu.mall.pojo.seckill.dto.SeckillOrderAddDTO;
 import cn.tedu.mall.pojo.seckill.vo.SeckillCommitVO;
 import cn.tedu.mall.seckill.service.ISeckillService;
@@ -11,11 +13,15 @@ import cn.tedu.mall.seckill.utils.SeckillCacheUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -76,14 +82,51 @@ public class SeckillServiceImpl implements ISeckillService {
         Long leftStock=stringRedisTemplate
                 .boundValueOps(seckillSkuCountKey).decrement();
         // leftStock是用户购买后剩余库存数
+        // 如果leftStock是0,表示当前用户购买了库存中的最后一件
         // 只有leftStock小于0时才表示售罄了
-
-
+        if(leftStock<0){
+            // 如果已经没有库存,就要终止当前用户本次购买
+            // 将当前用户购买此商品的次数修改为0
+            stringRedisTemplate.boundValueOps(reSeckillCheckKey).decrement();
+            // 抛出异常
+            throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,
+                                "对不起您所要购买的商品已经售罄");
+        }
+        // 到此为止,当前用户经过了重复购买和库存检查的判断,可以开始生成订单了!
         // 第二阶段:将秒杀订单转换为普通订单
+        // SeckillOrderAddDTO转换成OrderAddDTO,以实现Dubbo调用
+        // 自定义一个转换方法,参数是秒杀订单,返回值是普通订单
+        OrderAddDTO orderAddDTO=convertSeckillOrderToOrder(seckillOrderAddDTO);
+
+
+
 
         // 第三阶段:秒杀成功信息消息队列的发送
 
         return null;
+    }
+
+    private OrderAddDTO convertSeckillOrderToOrder(SeckillOrderAddDTO seckillOrderAddDTO) {
+        // 首先实例化最终要返回的普通订单对象
+        OrderAddDTO orderAddDTO=new OrderAddDTO();
+        // 将秒杀订单对象中同名属性直接赋值到普通订单对象中
+        BeanUtils.copyProperties(seckillOrderAddDTO,orderAddDTO);
+        // seckillOrderAddDTO包含的订单项对象SeckillOrderItemAddDTO
+        // 但是普通订单包含的订单项是List<OrderItemAddDTO>
+        // 所以我们要将SeckillOrderItemAddDTO对象转换为OrderItemAddDTO类型
+        // 然后再实例化一个集合添加进去,赋值给普通订单
+        OrderItemAddDTO orderItemAddDTO=new OrderItemAddDTO();
+        BeanUtils.copyProperties(
+                seckillOrderAddDTO.getSeckillOrderItemAddDTO(),
+                orderItemAddDTO);
+        // 实例化普通订单中的集合属性
+        List<OrderItemAddDTO> list=new ArrayList<>();
+        // 将赋值好的对象添加到集合中
+        list.add(orderItemAddDTO);
+        // 将集合赋值到普通订单中
+        orderAddDTO.setOrderItems(list);
+        // 转换完成,orderAddDTO包含了订单信息和订单项信息,可以返回了
+        return orderAddDTO;
     }
 
 
