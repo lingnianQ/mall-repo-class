@@ -124,10 +124,15 @@ public class SeckillServiceImpl implements ISeckillService {
         rabbitTemplate.convertAndSend(
                 RabbitMqComponentConfiguration.SECKILL_EX,
                 RabbitMqComponentConfiguration.SECKILL_RK,
-                success
-        );
+                success);
 
-        return null;
+        // 上面发送给RabbitMQ的消息会在专门的消息处理类中去接收,当前方法不用关注
+        // 最后按系统设计的返回值返回,经过分析SeckillCommitVO中的属性和OrderAddVO完全一致
+        SeckillCommitVO commitVO=new SeckillCommitVO();
+        // 将OrderAddVO的同名属性赋值给commitVO即可
+        BeanUtils.copyProperties(orderAddDTO,commitVO);
+        //  最后别忘了返回!!!
+        return commitVO;
     }
 
     private OrderAddDTO convertSeckillOrderToOrder(SeckillOrderAddDTO seckillOrderAddDTO) {
