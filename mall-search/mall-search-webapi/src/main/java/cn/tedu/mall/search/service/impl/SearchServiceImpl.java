@@ -18,10 +18,12 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
+//@Service
 @Slf4j
-public class SearchServiceImpl implements ISearchService {
-
+@Deprecated
+public class SearchServiceImpl //implements ISearchService
+                    {
+    /*
     // dubbo调用product模块查询所有spu
     @DubboReference
     private IForFrontSpuService dubboSpuService;
@@ -80,6 +82,6 @@ public class SearchServiceImpl implements ISearchService {
         // 最后别忘了返回!!!!
         return jsonPage;
     }
-
+*/
 
 }
