@@ -2,6 +2,7 @@ package cn.tedu.mall.search.controller;
 
 import cn.tedu.mall.common.restful.JsonPage;
 import cn.tedu.mall.common.restful.JsonResult;
+import cn.tedu.mall.pojo.search.entity.SpuEntity;
 import cn.tedu.mall.pojo.search.entity.SpuForElastic;
 import cn.tedu.mall.search.service.ISearchService;
 import io.swagger.annotations.Api;
@@ -29,9 +30,9 @@ public class SearchController {
             @ApiImplicitParam(value = "页码",name="page",example = "1"),
             @ApiImplicitParam(value = "每页条数",name="pageSize",example = "2")
     })
-    public JsonResult<JsonPage<SpuForElastic>> searchByKeyword(
+    public JsonResult<JsonPage<SpuEntity>> searchByKeyword(
             String keyword,Integer page,Integer pageSize){
-        JsonPage<SpuForElastic> jsonPage=
+        JsonPage<SpuEntity> jsonPage=
                 searchService.search(keyword,page,pageSize);
         return JsonResult.ok(jsonPage);
     }
