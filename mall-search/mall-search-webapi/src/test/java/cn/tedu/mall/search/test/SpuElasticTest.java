@@ -10,39 +10,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 // 下面注解必须加!!!!!!
 @SpringBootTest
 public class SpuElasticTest {
-    @Autowired
-    private ISearchService searchService;
-
-    @Test
-    void LoadData(){
-        searchService.loadSpuByPage();
-        System.out.println("ok");
-    }
-
-    @Autowired
-    private SpuForElasticRepository repository;
-    @Test
-    void showData(){
-        Iterable<SpuForElastic> spus=repository.findAll();
-        spus.forEach(spu -> System.out.println(spu));
-    }
-
-    @Test
-    void getSpusByTitle(){
-        // 根据title查询数据
-        Iterable<SpuForElastic> it=
-                repository.querySpuForElasticsByTitleMatches("手机电脑");
-        it.forEach(spu -> System.out.println(spu));
-    }
-
-    @Test
-    void getSpuByQuery(){
-        // 调用查询四个字段包含指定关键字的数据
-//        Iterable<SpuForElastic> it=
-//                repository.querySearch("华为手机");
-//        it.forEach(spu -> System.out.println(spu));
-
-    }
 
 
 
