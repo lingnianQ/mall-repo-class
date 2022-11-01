@@ -12,6 +12,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 三级分类列表
+ *
+ * @author sytsnb@gmail.com
+ * @date 2022 2022/11/1 19:39
+ */
 @RestController
 @RequestMapping("/front/category")
 @Api(tags = "前台分类查询")
@@ -21,8 +27,8 @@ public class CategoryController {
 
     @GetMapping("/all")
     @ApiOperation("查询获得三级分类树对象")
-    public JsonResult<FrontCategoryTreeVO<FrontCategoryEntity>> getTreeVO(){
-        FrontCategoryTreeVO<FrontCategoryEntity> treeVO=
+    public JsonResult<FrontCategoryTreeVO<FrontCategoryEntity>> getTreeVO() {
+        FrontCategoryTreeVO<FrontCategoryEntity> treeVO =
                 categoryService.categoryTree();
         return JsonResult.ok(treeVO);
     }
