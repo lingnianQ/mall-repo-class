@@ -82,13 +82,16 @@ public class OmsCartServiceImpl implements IOmsCartService {
     }
 
     /**
-     * 批量删除购物车
+     * 支持批量删除购物车
      *
      * @param ids
      */
     @Override
     public void removeCart(Long[] ids) {
-
+        int rows = omsCartMapper.deleteCartsByIds(ids);
+        if (rows == 0) {
+            throw new CoolSharkServiceException(ResponseCode.NOT_FOUND, "你要删除的商品已删除了~~");
+        }
     }
 
     /**
@@ -96,7 +99,11 @@ public class OmsCartServiceImpl implements IOmsCartService {
      */
     @Override
     public void removeAllCarts() {
-
+        Long userId = getUserId();
+        int rows = omsCartMapper.deleteCartsByUserId(userId);
+        if (rows == 0) {
+            throw new CoolSharkServiceException(ResponseCode.NOT_FOUND, "您的购物车已经是空了~~");
+        }
     }
 
     /**
@@ -106,7 +113,7 @@ public class OmsCartServiceImpl implements IOmsCartService {
      */
     @Override
     public void removeUserCarts(OmsCart omsCart) {
-
+        omsCartMapper.deleteCartsByUserIdAndSkuId(omsCart);
     }
 
     /**
@@ -116,7 +123,9 @@ public class OmsCartServiceImpl implements IOmsCartService {
      */
     @Override
     public void updateQuantity(CartUpdateDTO cartUpdateDTO) {
-
+        OmsCart omsCart = new OmsCart();
+        BeanUtils.copyProperties(cartUpdateDTO, omsCart);
+        omsCartMapper.updateQuantityById(omsCart);
     }
 
     /**

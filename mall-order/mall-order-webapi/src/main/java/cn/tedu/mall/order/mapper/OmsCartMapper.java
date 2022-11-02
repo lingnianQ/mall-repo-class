@@ -45,4 +45,30 @@ public interface OmsCartMapper {
      * @return
      */
     List<CartStandardVO> selectCartsByUserId(Long userId);
+
+    /**
+     * 据用户选中的一个或多个id,删除购物车中的商品(批量删除操作)
+     *
+     * @param ids array
+     * @return rows
+     */
+    int deleteCartsByIds(Long[] ids);
+
+    /**
+     * 清空指定用户购物车中所有sku商品
+     *
+     * @param userId user_id
+     * @return rows
+     */
+    int deleteCartsByUserId(Long userId);
+
+    /**
+     * 根据用户id和SkuId删除商品
+     *
+     * @param omsCart omsCart
+     * @return rows
+     */
+    int deleteCartsByUserIdAndSkuId(OmsCart omsCart);
+
+
 }
