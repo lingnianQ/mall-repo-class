@@ -9,12 +9,17 @@ import cn.tedu.mall.pojo.order.dto.CartAddDTO;
 import cn.tedu.mall.pojo.order.dto.CartUpdateDTO;
 import cn.tedu.mall.pojo.order.model.OmsCart;
 import cn.tedu.mall.pojo.order.vo.CartStandardVO;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import cn.tedu.mall.order.mapper.OmsCartMapper;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * @author sytsnb@gmail.com
@@ -34,7 +39,31 @@ public class OmsCartServiceImpl implements IOmsCartService {
      */
     @Override
     public void addCart(CartAddDTO cartDTO) {
-
+        // 要查询购物车中是否有指定商品之前,必须确定用户的Id
+        Long userId = getUserId();
+        // 根据用户Id和商品skuId,查询商品信息
+        OmsCart omsCart = omsCartMapper.selectExistsCart(
+                userId, cartDTO.getSkuId());
+        // 判断该商品是否存在
+        if (omsCart == null) {
+            // 如果omsCart为null,表示当前用户没有将这个商品新增到购物车
+            // 所以执行新增操作,新增操作需要一个OmsCart对象
+            OmsCart newCart = new OmsCart();
+            // 将参数CartAddDTO对象中的同名属性赋值给newCart
+            BeanUtils.copyProperties(cartDTO, newCart);
+            // CartAddDTO中没有userId属性,需要单独赋值
+            newCart.setUserId(userId);
+            // 执行新增操作
+            omsCartMapper.saveCart(newCart);
+        } else {
+            // 如果omsCart不是null,表示当前用户已经将这个商品新增到购物车中了
+            // 我们需要做的就是将这次新增的数量和原有的数量相加,保存到数据库中
+            // 我们写的mapper方法是直接修改商品数量的值
+            // 所以要在java代码层面完成本次业务数量的相加操作
+            omsCart.setQuantity(omsCart.getQuantity() + cartDTO.getQuantity());
+            // 确定了数量之后,直接调用修改购物车数量方法即可
+            omsCartMapper.updateQuantityById(omsCart);
+        }
     }
 
     /**
@@ -46,7 +75,10 @@ public class OmsCartServiceImpl implements IOmsCartService {
      */
     @Override
     public JsonPage<CartStandardVO> listCarts(Integer page, Integer pageSize) {
-        return null;
+        Long userId = getUserId();
+        PageHelper.startPage(page, pageSize);
+        List<CartStandardVO> list = omsCartMapper.selectCartsByUserId(userId);
+        return JsonPage.restPage(new PageInfo<>(list));
     }
 
     /**
