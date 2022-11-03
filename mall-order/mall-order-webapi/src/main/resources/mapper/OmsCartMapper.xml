@@ -105,12 +105,11 @@
     </delete>
 
     <!--  根据用户id和SkuId删除商品 -->
-    <delete id="deleteCartByUserIdAndSkuId">
+    <delete id="deleteCartsByUserIdAndSkuId">
         DELETE
         FROM oms_cart
-        WHERE user_id = #{user_id}
-          AND sku_id =
-              #{skuId}
+        WHERE user_id = #{userId}
+          AND sku_id = #{skuId}
     </delete>
 
 
