@@ -29,4 +29,13 @@ public interface OmsOrderMapper {
      */
     List<OrderListVO> selectOrdersBetweenTimes(OrderListTimeDTO orderListTimeDTO);
 
+    /**
+     * 利用动态sql,实现对订单内容的修改
+     * 参数是OmsOrder类型,且必须包含id值,id不可修改,其他属性如果不为空,就修改为当前值
+     *
+     * @param order
+     * @return
+     */
+    int updateOrderById(OmsOrder order);
+
 }

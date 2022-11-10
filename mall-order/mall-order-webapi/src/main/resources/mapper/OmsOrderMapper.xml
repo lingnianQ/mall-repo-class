@@ -121,7 +121,7 @@
     </resultMap>
 
     <!--  查询当前用户指定时间范围内的所有订单信息(包含订单项)   -->
-    <select id="selectOrdersBetweenTimes">
+    <select id="selectOrdersBetweenTimes" resultMap="OrderListMap">
         SELECT oo.id,
                oo.sn,
                oo.user_id,
@@ -144,7 +144,68 @@
           AND oo.gmt_create &gt; #{startTime}
           AND oo.gmt_create &lt; #{endTime}
         ORDER BY oo.gmt_modified DESC
-
     </select>
+
+    <!--利用动态sql,实现对订单内容的修改,参数是OmsOrder类型,且必须包含id值,id不可修改,其他属性如果不为空,就修改为当前值-->
+    <!--
+     OmsOrder对象动态修改数据库中数据的sql语句
+     Mybatis框架动态生成修改的Sql语句,需要<set>标签
+     1. 在<set>标签的位置生成一个set关键字
+     2. 在<set></set>标签之间,根据判断动态生成的sql语句,
+         如果生成的内容最后一个字符是","就会将它删除!
+         -->
+    <update id="updateOrderById">
+        update oms_order
+        <set>
+            <if test="contactName!=null">
+                contact_name=#{contactName},
+            </if>
+            <if test="mobilePhone!=null">
+                mobile_phone=#{mobilePhone},
+            </if>
+            <if test="telephone!=null">
+                telephone=#{telephone},
+            </if>
+            <if test="streetCode!=null">
+                street_code=#{streetCode},
+            </if>
+            <if test="streetName!=null">
+                street_name=#{streetName},
+            </if>
+            <if test="detailedAddress!=null">
+                detailed_address=#{detailedAddress},
+            </if>
+            <if test="tag!=null">
+                tag=#{tag},
+            </if>
+            <if test="paymentType!=null">
+                payment_type=#{paymentType},
+            </if>
+            <if test="state!=null">
+                state=#{state},
+            </if>
+            <if test="rewardPoint!=null">
+                reward_point=#{rewardPoint},
+            </if>
+            <if test="amountOfOriginalPrice!=null">
+                amount_of_original_price=#{amountOfOriginalPrice},
+            </if>
+            <if test="amountOfFreight!=null">
+                amount_of_freight=#{amountOfFreight},
+            </if>
+            <if test="amountOfDiscount!=null">
+                amount_of_discount=#{amountOfDiscount},
+            </if>
+            <if test="amountOfActualPay!=null">
+                amount_of_actual_pay=#{amountOfActualPay},
+            </if>
+            <if test="gmtPay!=null">
+                gmt_pay=#{gmtPay},
+            </if>
+        </set>
+        where
+        id=#{id}
+    </update>
+
 
 </mapper>

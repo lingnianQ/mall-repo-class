@@ -20,6 +20,8 @@ import cn.tedu.mall.pojo.order.vo.OrderAddVO;
 import cn.tedu.mall.pojo.order.vo.OrderDetailVO;
 import cn.tedu.mall.pojo.order.vo.OrderListVO;
 import cn.tedu.mall.product.service.order.IForOrderSkuService;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -32,6 +34,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -164,12 +167,15 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
 
     /**
      * 更新订单状态
+     * 根据订单id,修改订单的状态
      *
      * @param orderStateUpdateDTO
      */
     @Override
     public void updateOrderState(OrderStateUpdateDTO orderStateUpdateDTO) {
-
+        OmsOrder order = new OmsOrder();
+        BeanUtils.copyProperties(orderStateUpdateDTO, order);
+        omsOrderMapper.updateOrderById(order);
     }
 
     /**
@@ -179,7 +185,41 @@ public class OmsOrderServiceImpl implements IOmsOrderService {
      */
     @Override
     public JsonPage<OrderListVO> listOrdersBetweenTimes(OrderListTimeDTO orderListTimeDTO) {
-        return null;
+        // 业务逻辑层首先要判断给定的时间范围,如果为空默认最近一个月
+        // 如果不为空要保证结束时间大于开始时间,可以编写一个方法专门判断
+        validateTimeAndLoadTime(orderListTimeDTO);
+        //将userId赋值到参数中
+        orderListTimeDTO.setUserId(getUserId());
+        // 分页查询要设置分页条件
+        PageHelper.startPage(orderListTimeDTO.getPage(), orderListTimeDTO.getPageSize());
+        // 调用关联查询的方法,获得包含订单中商品信息的订单集合
+        List<OrderListVO> list = omsOrderMapper.selectOrdersBetweenTimes(orderListTimeDTO);
+        return JsonPage.restPage(new PageInfo<>(list));
+    }
+
+    private void validateTimeAndLoadTime(OrderListTimeDTO orderListTimeDTO) {
+        // 获取开始时间和结束时间
+        LocalDateTime startTime = orderListTimeDTO.getStartTime();
+        LocalDateTime endTime = orderListTimeDTO.getEndTime();
+        // 为了让我们的业务更加简单明了,我们设计start和end任意一个为空就查询最近一个月的订单
+        if (startTime == null || endTime == null) {
+            // start设置为一个月之前的时间
+            startTime = LocalDateTime.now().minusMonths(1);
+            endTime = LocalDateTime.now();
+            // 将属性赋值到对象中
+            orderListTimeDTO.setStartTime(startTime);
+            orderListTimeDTO.setEndTime(endTime);
+        } else {
+            // 如果start和end都非null
+            // 就要判断start是否小于end,否则要抛出异常
+            if (endTime.toInstant(ZoneOffset.of("+8")).toEpochMilli() <
+                    startTime.toInstant(ZoneOffset.of("+8")).toEpochMilli()) {
+                // 如果判断表示结束时间小于开始时间,抛出异常
+                throw new CoolSharkServiceException(ResponseCode.BAD_REQUEST,
+                        "结束时间应大于起始时间!");
+            }
+        }
+
     }
 
     /**
