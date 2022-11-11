@@ -36,12 +36,12 @@ public class SpuElasticTest {
         spus.forEach(System.out::println);
     }
 
-    @Test
-    void getSpuByQuery() {
-        // 调用查询四个字段包含指定关键字数据的方法
-        Iterable<SpuForElastic> spus =
-                spuForElasticRepository.querySearch("华为手机");
-        spus.forEach(System.out::println);
-    }
+//    @Test
+//    void getSpuByQuery() {
+//        // 调用查询四个字段包含指定关键字数据的方法
+//        Iterable<SpuForElastic> spus =
+//                spuForElasticRepository.querySearch("华为手机");
+//        spus.forEach(System.out::println);
+//    }
 
 }
