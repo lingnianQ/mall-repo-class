@@ -18,6 +18,7 @@ import java.util.Scanner;
 
 /**
  * 代码生成类
+ * tarena2017Up
  */
 @Deprecated
 public class CodeGenerator {
@@ -26,7 +27,7 @@ public class CodeGenerator {
     public static String driver = "com.mysql.cj.jdbc.Driver";
     public static String url = "jdbc:mysql://localhost:3306/mall_seckill?characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true";
     public static String username = "root";
-    public static String password = "tarena2017Up;";
+    public static String password = "root;";
     // 父级别包名称
     public static String parentPackage = "cn.tedu.mall";
     // 模块名称，用于组成包名
